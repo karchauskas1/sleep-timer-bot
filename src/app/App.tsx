@@ -26,6 +26,8 @@ import { TelegramProvider } from './providers/TelegramProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { Router } from './Router';
 import { useStoreHydration } from '@/shared/hooks/useStoreHydration';
+import { useOnboarding } from '@/shared/hooks/useOnboarding';
+import { Onboarding } from '@/shared/components/Onboarding';
 
 // =============================================================================
 // Types
@@ -44,14 +46,18 @@ export interface AppProps {
 // =============================================================================
 
 /**
- * AppContent - Inner component that handles hydration and rendering
+ * AppContent - Inner component that handles hydration, onboarding, and rendering
  *
  * Separated from main App to ensure hooks are called within provider context.
- * This component checks hydration status before rendering the Router.
+ * This component checks hydration status, shows onboarding for first-time users,
+ * then renders the Router.
  */
 function AppContent() {
   // Check if store is hydrated from IndexedDB
   const { isHydrated, hasError } = useStoreHydration();
+
+  // Check if onboarding is completed (persisted in localStorage)
+  const { isCompleted: isOnboardingCompleted, completeOnboarding } = useOnboarding();
 
   // During hydration, render nothing (no loading spinner per design philosophy)
   // Hydration should complete in <100ms
@@ -85,6 +91,11 @@ function AppContent() {
         <p className="text-sm">Не удалось загрузить данные</p>
       </div>
     );
+  }
+
+  // Show onboarding for first-time users
+  if (!isOnboardingCompleted) {
+    return <Onboarding onComplete={completeOnboarding} />;
   }
 
   // Render the main application router

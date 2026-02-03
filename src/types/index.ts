@@ -2,6 +2,8 @@
  * Type definitions for the ЩА (SHA) Telegram Mini App
  */
 
+import type { ReactNode } from 'react';
+
 // =============================================================================
 // Task Types
 // =============================================================================
@@ -131,3 +133,31 @@ export type SwipeAction = 'postpone' | 'delete' | 'none';
  * Haptic feedback intensity levels
  */
 export type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning';
+
+// =============================================================================
+// Onboarding Types
+// =============================================================================
+
+/**
+ * A single slide in the onboarding flow
+ */
+export interface OnboardingSlide {
+  /** Unique identifier for the slide */
+  id: string;
+  /** Slide title text */
+  title: string;
+  /** Slide description text */
+  description: string;
+  /** Visual content (React component or image) for the slide */
+  illustration: ReactNode;
+}
+
+/**
+ * State of the onboarding flow
+ */
+export interface OnboardingState {
+  /** Whether the user has completed onboarding */
+  isCompleted: boolean;
+  /** Function to mark onboarding as completed */
+  completeOnboarding: () => void;
+}

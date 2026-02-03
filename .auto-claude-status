@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "002-",
+  "state": "building",
+  "subtasks": {
+    "completed": 3,
+    "total": 12,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Design Tokens & Types",
+    "id": null,
+    "total": 2
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 4,
+    "started_at": "2026-02-03T10:48:22.524020"
+  },
+  "last_update": "2026-02-03T10:53:18.056439"
+}

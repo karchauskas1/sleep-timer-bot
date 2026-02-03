@@ -7,7 +7,7 @@
  * Features:
  * - Persists last opened module to localStorage
  * - Smooth transitions between modules with AnimatePresence
- * - Renders Navigation at top, module content below
+ * - Renders BottomNavigation at bottom, module content above
  * - Lazy renders modules to optimize initial load
  *
  * @example
@@ -22,7 +22,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ModuleId } from '@/types';
-import { Navigation, getLastModule } from '@/shared/components/Navigation';
+import { BottomNavigation, getLastModule } from '@/shared/components/BottomNavigation';
 import { Planner } from '@/modules/planner';
 import { Sleep } from '@/modules/sleep';
 import { Timer } from '@/modules/timer';
@@ -86,7 +86,7 @@ interface RouterProps {
  * Router component for module switching
  *
  * Manages the current active module and renders the appropriate content.
- * Navigation is always visible at the top, with module content below.
+ * BottomNavigation is fixed at the bottom, with module content above.
  *
  * @param props - Component props
  * @param props.defaultModule - Default module when no persisted preference
@@ -111,8 +111,8 @@ export function Router({ defaultModule = DEFAULT_MODULE, className = '' }: Route
   // -------------------------------------------------------------------------
 
   /**
-   * Handle module change from Navigation
-   * Navigation component handles persistence to localStorage
+   * Handle module change from BottomNavigation
+   * BottomNavigation component handles persistence to localStorage
    */
   const handleModuleChange = useCallback((module: ModuleId) => {
     setCurrentModule(module);
@@ -151,15 +151,12 @@ export function Router({ defaultModule = DEFAULT_MODULE, className = '' }: Route
         backgroundColor: 'var(--color-bg)',
       }}
     >
-      {/* Navigation - always visible at top */}
-      <Navigation
-        currentModule={currentModule}
-        onModuleChange={handleModuleChange}
-      />
-
       {/* Module Content Area */}
       <main
         className="flex-1 flex flex-col overflow-hidden"
+        style={{
+          paddingBottom: 'calc(var(--height-bottom-nav) + var(--safe-area-bottom))',
+        }}
         role="tabpanel"
         id={`panel-${currentModule}`}
         aria-labelledby={`tab-${currentModule}`}
@@ -178,6 +175,12 @@ export function Router({ defaultModule = DEFAULT_MODULE, className = '' }: Route
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* BottomNavigation - fixed at screen bottom */}
+      <BottomNavigation
+        currentModule={currentModule}
+        onModuleChange={handleModuleChange}
+      />
     </div>
   );
 }
