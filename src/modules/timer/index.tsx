@@ -24,9 +24,12 @@
 import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTimer } from '@/modules/timer/hooks/useTimer';
+import { useSound } from '@/shared/hooks/useSound';
+import { getSetting } from '@/shared/utils/storage';
 import { TimerDisplay } from '@/modules/timer/components/TimerDisplay';
 import { TimerPresets } from '@/modules/timer/components/TimerPresets';
 import { CustomTimeInput } from '@/modules/timer/components/CustomTimeInput';
+import type { SoundType } from '@/types';
 
 // =============================================================================
 // Constants
@@ -136,13 +139,23 @@ interface TimerProps {
  */
 export function Timer({ className = '' }: TimerProps) {
   // -------------------------------------------------------------------------
-  // Timer Hook
+  // Hooks
   // -------------------------------------------------------------------------
 
+  const sound = useSound();
+
   const timer = useTimer({
-    onComplete: () => {
-      // Timer completion is handled by the hook (haptic feedback)
-      // Additional effects (sound, notification) can be added here
+    onComplete: async () => {
+      // Play completion sound based on user preference
+      try {
+        const soundPreference = await getSetting('soundPreference');
+        const soundType = (soundPreference as SoundType) || 'chime';
+        sound.play(soundType);
+      } catch {
+        // Fallback to chime if preference can't be loaded
+        sound.play('chime');
+      }
+      // Haptic feedback is handled by the useTimer hook
     },
   });
 
