@@ -72,6 +72,16 @@ export interface TimerState {
   startedAt?: string;
 }
 
+/**
+ * A timer history entry for recent timers
+ */
+export interface TimerHistoryEntry {
+  /** Duration in seconds */
+  duration: number;
+  /** Timestamp when added to history (for sorting) */
+  addedAt: string; // ISO 8601
+}
+
 // =============================================================================
 // Settings Types
 // =============================================================================
@@ -79,17 +89,12 @@ export interface TimerState {
 /**
  * Valid setting keys for the application
  */
-export type SettingKey = 'lastModule' | 'theme' | 'sleepOnsetMinutes' | 'soundPreference';
-
-/**
- * Sound types for timer completion
- */
-export type SoundType = 'chime' | 'bell' | 'tone' | 'none';
+export type SettingKey = 'lastModule' | 'theme';
 
 /**
  * Module identifiers for navigation
  */
-export type ModuleId = 'planner' | 'sleep' | 'timer' | 'settings';
+export type ModuleId = 'planner' | 'sleep' | 'timer';
 
 /**
  * Theme options

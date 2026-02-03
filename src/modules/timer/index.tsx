@@ -24,9 +24,10 @@
 import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTimer } from '@/modules/timer/hooks/useTimer';
-import { useTelegram } from '@/shared/hooks/useTelegram';
+import { useTimerHistory } from '@/modules/timer/hooks/useTimerHistory';
 import { TimerDisplay } from '@/modules/timer/components/TimerDisplay';
 import { TimerPresets } from '@/modules/timer/components/TimerPresets';
+import { TimerHistory } from '@/modules/timer/components/TimerHistory';
 import { CustomTimeInput } from '@/modules/timer/components/CustomTimeInput';
 
 // =============================================================================
@@ -137,21 +138,21 @@ interface TimerProps {
  */
 export function Timer({ className = '' }: TimerProps) {
   // -------------------------------------------------------------------------
-  // Hooks
+  // Timer Hook
   // -------------------------------------------------------------------------
-
-  const { showPopup } = useTelegram();
 
   const timer = useTimer({
     onComplete: () => {
       // Timer completion is handled by the hook (haptic feedback)
-      // Show notification popup with Russian message
-      showPopup({
-        message: 'Таймер завершён!',
-        buttons: [{ type: 'ok' }],
-      });
+      // Additional effects (sound, notification) can be added here
     },
   });
+
+  // -------------------------------------------------------------------------
+  // Timer History Hook
+  // -------------------------------------------------------------------------
+
+  const { addToHistory } = useTimerHistory();
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -159,12 +160,14 @@ export function Timer({ className = '' }: TimerProps) {
 
   /**
    * Start timer with a given duration in seconds
+   * Also adds the duration to history for quick restart
    */
   const handleStart = useCallback(
     (seconds: number) => {
       timer.start(seconds);
+      addToHistory(seconds);
     },
-    [timer]
+    [timer, addToHistory]
   );
 
   // -------------------------------------------------------------------------
@@ -200,6 +203,17 @@ export function Timer({ className = '' }: TimerProps) {
               exit="exit"
               className="w-full max-w-sm flex flex-col items-center"
             >
+              {/* History Section */}
+              <motion.div
+                variants={sectionVariants}
+                className="w-full"
+                style={{
+                  marginBottom: 'var(--space-xl)',
+                }}
+              >
+                <TimerHistory onSelect={handleStart} />
+              </motion.div>
+
               {/* Presets Section */}
               <motion.div
                 variants={sectionVariants}
@@ -259,40 +273,6 @@ export function Timer({ className = '' }: TimerProps) {
                 className="w-full"
               >
                 <CustomTimeInput onStart={handleStart} />
-              </motion.div>
-
-              {/* Background Info Banner */}
-              <motion.div
-                variants={sectionVariants}
-                className="w-full"
-                style={{
-                  marginTop: 'var(--space-2xl)',
-                }}
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    padding: 'var(--space-md)',
-                    backgroundColor: 'var(--color-bg-surface)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border-thin)',
-                  }}
-                  role="status"
-                  aria-live="polite"
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-family)',
-                      fontSize: 'var(--font-xs)',
-                      fontWeight: 'var(--font-weight-normal)',
-                      color: 'var(--color-text-muted)',
-                      lineHeight: '1.5',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Таймер работает в фоне, пока открыто приложение Telegram
-                  </span>
-                </div>
               </motion.div>
             </motion.div>
           ) : (
