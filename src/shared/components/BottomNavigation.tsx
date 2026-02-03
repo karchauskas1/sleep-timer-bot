@@ -27,8 +27,24 @@
  */
 
 import { useCallback, useEffect } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { ModuleId } from '@/types';
 import { useHaptic } from '@/shared/hooks/useHaptic';
+
+// =============================================================================
+// Animation Variants
+// =============================================================================
+
+/**
+ * Indicator position variants for each tab
+ * Each tab occupies 25% width, so positions are 0%, 100%, 200%, 300%
+ */
+const indicatorVariants = {
+  planner: { x: '0%' },
+  sleep: { x: '100%' },
+  timer: { x: '200%' },
+  settings: { x: '300%' },
+};
 
 // =============================================================================
 // Constants
@@ -226,6 +242,7 @@ export function BottomNavigation({
   onModuleChange,
 }: BottomNavigationProps) {
   const haptic = useHaptic();
+  const prefersReducedMotion = useReducedMotion();
 
   // Persist module changes to localStorage
   useEffect(() => {
@@ -247,15 +264,40 @@ export function BottomNavigation({
     <nav
       className="fixed bottom-0 left-0 right-0 flex items-center justify-around"
       style={{
-        height: `calc(var(--height-bottom-nav) + var(--safe-area-bottom) + 40px)`,
-        paddingBottom: 'calc(var(--safe-area-bottom) + 40px)',
-        backgroundColor: 'var(--color-bg-elevated)',
-        borderTop: '1px solid var(--color-border-thin)',
+        height: `calc(var(--height-bottom-nav) + env(safe-area-inset-bottom, 34px))`,
+        paddingBottom: 'env(safe-area-inset-bottom, 34px)',
+        backgroundColor: 'var(--glass-bg)',
+        backdropFilter: 'var(--glass-blur)',
+        WebkitBackdropFilter: 'var(--glass-blur)',
+        borderTop: '1px solid var(--glass-border)',
         zIndex: 'var(--z-fixed)',
       }}
       role="tablist"
       aria-label="Module navigation"
     >
+      {/* Sliding indicator */}
+      <motion.div
+        className="absolute rounded-lg"
+        style={{
+          width: '25%',
+          height: 'calc(100% - env(safe-area-inset-bottom, 34px) - 8px)',
+          top: 4,
+          left: 0,
+          backgroundColor: 'var(--nav-indicator-bg)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+        }}
+        variants={indicatorVariants}
+        animate={currentModule}
+        transition={
+          prefersReducedMotion
+            ? { duration: 0 }
+            : {
+                type: 'spring',
+                stiffness: 400,
+                damping: 30,
+              }
+        }
+      />
       {TABS.map((tab) => {
         const isActive = tab.id === currentModule;
         const Icon = tab.Icon;
@@ -267,7 +309,7 @@ export function BottomNavigation({
             role="tab"
             aria-selected={isActive}
             aria-controls={`panel-${tab.id}`}
-            className="flex flex-col items-center justify-center gap-[var(--space-0-5)] flex-1"
+            className="relative z-10 flex flex-col items-center justify-center gap-[var(--space-0-5)] flex-1"
             style={{
               fontFamily: 'var(--font-family)',
               fontSize: 'var(--font-2xs)',
@@ -277,7 +319,6 @@ export function BottomNavigation({
               color: isActive
                 ? 'var(--color-accent)'
                 : 'var(--color-text-muted)',
-              backgroundColor: 'transparent',
               border: 'none',
               cursor: 'pointer',
               minHeight: 'var(--min-touch-target)',
