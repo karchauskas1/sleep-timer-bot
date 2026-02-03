@@ -1,7 +1,7 @@
 /**
  * Router - State-based module routing for the ЩА (SHA) Mini App
  *
- * Manages module switching between Planner, Sleep, and Timer.
+ * Manages module switching between Planner, Sleep, Timer, and Settings.
  * Uses state-based routing (not URL) for Telegram Mini App compatibility.
  *
  * Features:
@@ -26,6 +26,7 @@ import { BottomNavigation, getLastModule } from '@/shared/components/BottomNavig
 import { Planner } from '@/modules/planner';
 import { Sleep } from '@/modules/sleep';
 import { Timer } from '@/modules/timer';
+import { Settings } from '@/modules/settings';
 
 // =============================================================================
 // Constants
@@ -134,6 +135,8 @@ export function Router({ defaultModule = DEFAULT_MODULE, className = '' }: Route
         return <Sleep key="sleep" />;
       case 'timer':
         return <Timer key="timer" />;
+      case 'settings':
+        return <Settings key="settings" />;
       default:
         // TypeScript exhaustive check - should never reach here
         return null;

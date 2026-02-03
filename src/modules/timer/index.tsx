@@ -24,13 +24,10 @@
 import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTimer } from '@/modules/timer/hooks/useTimer';
-import { useSound } from '@/shared/hooks/useSound';
-import { getSetting } from '@/shared/utils/storage';
+import { useTelegram } from '@/shared/hooks/useTelegram';
 import { TimerDisplay } from '@/modules/timer/components/TimerDisplay';
 import { TimerPresets } from '@/modules/timer/components/TimerPresets';
 import { CustomTimeInput } from '@/modules/timer/components/CustomTimeInput';
-import { SoundSelector } from '@/modules/timer/components/SoundSelector';
-import type { SoundType } from '@/types';
 
 // =============================================================================
 // Constants
@@ -143,20 +140,16 @@ export function Timer({ className = '' }: TimerProps) {
   // Hooks
   // -------------------------------------------------------------------------
 
-  const sound = useSound();
+  const { showPopup } = useTelegram();
 
   const timer = useTimer({
-    onComplete: async () => {
-      // Play completion sound based on user preference
-      try {
-        const soundPreference = await getSetting('soundPreference');
-        const soundType = (soundPreference as SoundType) || 'chime';
-        sound.play(soundType);
-      } catch {
-        // Fallback to chime if preference can't be loaded
-        sound.play('chime');
-      }
-      // Haptic feedback is handled by the useTimer hook
+    onComplete: () => {
+      // Timer completion is handled by the hook (haptic feedback)
+      // Show notification popup with Russian message
+      showPopup({
+        message: 'Таймер завершён!',
+        buttons: [{ type: 'ok' }],
+      });
     },
   });
 
@@ -268,15 +261,38 @@ export function Timer({ className = '' }: TimerProps) {
                 <CustomTimeInput onStart={handleStart} />
               </motion.div>
 
-              {/* Sound Selector Section */}
+              {/* Background Info Banner */}
               <motion.div
                 variants={sectionVariants}
                 className="w-full"
                 style={{
-                  marginTop: 'var(--space-xl)',
+                  marginTop: 'var(--space-2xl)',
                 }}
               >
-                <SoundSelector />
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    padding: 'var(--space-md)',
+                    backgroundColor: 'var(--color-bg-surface)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border-thin)',
+                  }}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-family)',
+                      fontSize: 'var(--font-xs)',
+                      fontWeight: 'var(--font-weight-normal)',
+                      color: 'var(--color-text-muted)',
+                      lineHeight: '1.5',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Таймер работает в фоне, пока открыто приложение Telegram
+                  </span>
+                </div>
               </motion.div>
             </motion.div>
           ) : (

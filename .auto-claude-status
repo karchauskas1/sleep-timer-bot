@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "002-",
+  "spec": "005-customizable-sleep-onset-time",
   "state": "building",
   "subtasks": {
-    "completed": 3,
-    "total": 12,
+    "completed": 9,
+    "total": 10,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Design Tokens & Types",
+    "current": "Integration Testing",
     "id": null,
-    "total": 2
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 4,
-    "started_at": "2026-02-03T10:48:22.524020"
+    "number": 11,
+    "started_at": "2026-02-03T11:54:15.454452"
   },
-  "last_update": "2026-02-03T10:53:18.056439"
+  "last_update": "2026-02-03T12:17:35.415910"
 }

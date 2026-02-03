@@ -17,10 +17,20 @@
  * const { haptic } = useTelegram();
  * haptic.success(); // Task completed
  * haptic.light();   // Selection change
+ *
+ * @example
+ * // Show a popup notification
+ * const { showPopup } = useTelegram();
+ * showPopup({
+ *   title: 'Timer Complete',
+ *   message: 'Your 25-minute focus session is complete!',
+ *   buttons: [{ type: 'ok', text: 'OK' }]
+ * });
  */
 
 import WebApp from '@twa-dev/sdk';
 import type { ThemeValue } from '@/types';
+import type { PopupParams } from '@twa-dev/types';
 
 // =============================================================================
 // Types
@@ -61,6 +71,8 @@ interface UseTelegramResult {
   close: () => void;
   /** Expand the Mini App to full height */
   expand: () => void;
+  /** Show a native popup notification */
+  showPopup: (params: PopupParams, callback?: (buttonId?: string) => void) => void;
   /** Platform the app is running on */
   platform: string;
   /** Whether the app is running in Telegram environment */
@@ -103,6 +115,17 @@ function checkTelegramEnv(): boolean {
       WebApp.initDataUnsafe?.query_id ||
       (typeof window !== 'undefined' && window.Telegram?.WebApp)
     );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if popup notifications are supported
+ */
+function isPopupSupported(): boolean {
+  try {
+    return !!(WebApp.showPopup && typeof WebApp.showPopup === 'function');
   } catch {
     return false;
   }
@@ -230,12 +253,66 @@ export function useTelegram(): UseTelegramResult {
     }
   };
 
+  // Show a native popup notification
+  const showPopup = (params: PopupParams, callback?: (buttonId?: string) => void) => {
+    if (!isPopupSupported()) {
+      // Fallback to browser alert in non-Telegram environment
+      if (typeof window !== 'undefined' && window.alert) {
+        // Format the message for browser alert
+        const alertMessage = params.title
+          ? `${params.title}\n\n${params.message}`
+          : params.message;
+
+        try {
+          window.alert(alertMessage);
+        } catch {
+          // If alert fails, just log in development
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.warn('[useTelegram] Browser alert failed:', params.message);
+          }
+        }
+      } else if (process.env.NODE_ENV === 'development') {
+        // Console warning only in development when alert not available
+        // eslint-disable-next-line no-console
+        console.warn('[useTelegram] showPopup not supported:', params.message);
+      }
+
+      // Call callback with undefined to signal completion
+      callback?.(undefined);
+      return;
+    }
+
+    try {
+      WebApp.showPopup(params, callback);
+    } catch (error) {
+      // Fallback to browser alert on error
+      if (typeof window !== 'undefined' && window.alert) {
+        try {
+          const alertMessage = params.title
+            ? `${params.title}\n\n${params.message}`
+            : params.message;
+          window.alert(alertMessage);
+        } catch {
+          // Silently fail if alert also fails
+        }
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('[useTelegram] showPopup error:', error);
+      }
+      callback?.(undefined);
+    }
+  };
+
   return {
     colorScheme,
     haptic: hapticMethods,
     ready,
     close,
     expand,
+    showPopup,
     platform: WebApp.platform || 'unknown',
     isTelegramEnv: checkTelegramEnv(),
     user: WebApp.initDataUnsafe?.user,

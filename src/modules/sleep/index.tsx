@@ -32,6 +32,7 @@ import {
   getCurrentTimeRounded,
   createTimeForToday,
 } from '@/modules/sleep/utils/sleepCalculator';
+import { useSettingsStore } from '@/modules/settings/store/settingsStore';
 
 // =============================================================================
 // Constants
@@ -111,6 +112,16 @@ interface SleepProps {
  */
 export function Sleep({ className = '' }: SleepProps) {
   // -------------------------------------------------------------------------
+  // Settings
+  // -------------------------------------------------------------------------
+
+  /**
+   * Sleep onset time in minutes from settings store
+   * Used in all sleep calculations
+   */
+  const sleepOnsetMinutes = useSettingsStore((state) => state.sleepOnsetMinutes);
+
+  // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
 
@@ -169,11 +180,11 @@ export function Sleep({ className = '' }: SleepProps) {
 
   /**
    * Calculated sleep/wake time options
-   * Memoized to only recalculate when mode or reference time changes
+   * Memoized to only recalculate when mode, reference time, or sleep onset setting changes
    */
   const sleepOptions = useMemo(
-    () => calculateSleepOptions(mode, referenceTime),
-    [mode, referenceTime]
+    () => calculateSleepOptions(mode, referenceTime, sleepOnsetMinutes),
+    [mode, referenceTime, sleepOnsetMinutes]
   );
 
   // -------------------------------------------------------------------------

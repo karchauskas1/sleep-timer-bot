@@ -20,6 +20,11 @@ import './styles/animations.css'
 // Main application component
 import { App } from './app/App'
 
+// Development tools - auto-loads test utilities in dev mode
+if (import.meta.env.DEV) {
+  import('./shared/utils/notificationTest')
+}
+
 // =============================================================================
 // Application Initialization
 // =============================================================================

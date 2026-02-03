@@ -1,7 +1,7 @@
 /**
  * Sleep calculator utility for calculating optimal sleep/wake times
  *
- * Based on 90-minute sleep cycles and a 15-minute fall asleep time.
+ * Based on 90-minute sleep cycles and customizable fall asleep time (default 14 minutes).
  * Provides two modes:
  * - bedtime: Given when you're going to bed, calculates optimal wake times
  * - waketime: Given when you need to wake, calculates optimal bedtimes
@@ -23,10 +23,11 @@ import type { SleepOption, SleepMode } from '@/types';
 export const CYCLE_MINUTES = 90;
 
 /**
- * Average time it takes to fall asleep in minutes
+ * Default time it takes to fall asleep in minutes
  * This offset is added when calculating times
+ * Can be customized per user in settings (1-60 minutes)
  */
-export const FALL_ASLEEP_MINUTES = 15;
+export const FALL_ASLEEP_MINUTES = 14;
 
 /**
  * Minimum number of sleep cycles to suggest
@@ -50,18 +51,27 @@ export const MAX_CYCLES = 6;
  * Mode A: "I'm going to bed at [time]" → shows 4 wake time options (3-6 cycles)
  *
  * @param bedTime - The time you're going to bed
+ * @param fallAsleepMinutes - Time it takes to fall asleep in minutes (defaults to FALL_ASLEEP_MINUTES)
  * @returns Array of SleepOption objects with wake times and cycle counts
  *
  * @example
  * const bedTime = new Date('2026-02-02T23:00:00');
  * const wakeOptions = calculateWakeTimes(bedTime);
  * // Returns times like: 4:00 (3 cycles), 5:30 (4 cycles), 7:00 (5 cycles), 8:30 (6 cycles)
+ *
+ * @example
+ * // With custom fall asleep time
+ * const wakeOptions = calculateWakeTimes(bedTime, 30);
+ * // Uses 30 minutes to fall asleep instead of default
  */
-export function calculateWakeTimes(bedTime: Date): SleepOption[] {
+export function calculateWakeTimes(
+  bedTime: Date,
+  fallAsleepMinutes: number = FALL_ASLEEP_MINUTES
+): SleepOption[] {
   const results: SleepOption[] = [];
 
   // Calculate when you'll actually fall asleep
-  const asleepTime = addMinutes(bedTime, FALL_ASLEEP_MINUTES);
+  const asleepTime = addMinutes(bedTime, fallAsleepMinutes);
 
   // Generate wake time options for each cycle count (3-6 cycles)
   for (let cycles = MIN_CYCLES; cycles <= MAX_CYCLES; cycles++) {
@@ -83,20 +93,29 @@ export function calculateWakeTimes(bedTime: Date): SleepOption[] {
  * Mode B: "I need to wake at [time]" → shows 4 sleep time options (6-3 cycles)
  *
  * @param wakeTime - The time you need to wake up
+ * @param fallAsleepMinutes - Time it takes to fall asleep in minutes (defaults to FALL_ASLEEP_MINUTES)
  * @returns Array of SleepOption objects with bedtimes and cycle counts (sorted by time, earliest first)
  *
  * @example
  * const wakeTime = new Date('2026-02-03T07:00:00');
  * const sleepOptions = calculateSleepTimes(wakeTime);
  * // Returns times like: 21:15 (6 cycles), 22:45 (5 cycles), 00:15 (4 cycles), 01:45 (3 cycles)
+ *
+ * @example
+ * // With custom fall asleep time
+ * const sleepOptions = calculateSleepTimes(wakeTime, 5);
+ * // Uses 5 minutes to fall asleep instead of default
  */
-export function calculateSleepTimes(wakeTime: Date): SleepOption[] {
+export function calculateSleepTimes(
+  wakeTime: Date,
+  fallAsleepMinutes: number = FALL_ASLEEP_MINUTES
+): SleepOption[] {
   const results: SleepOption[] = [];
 
   // Generate bedtime options for each cycle count (starting from max for better display order)
   for (let cycles = MAX_CYCLES; cycles >= MIN_CYCLES; cycles--) {
-    // Total sleep needed = cycles * 90 minutes + 15 minutes to fall asleep
-    const sleepNeeded = cycles * CYCLE_MINUTES + FALL_ASLEEP_MINUTES;
+    // Total sleep needed = cycles * 90 minutes + fall asleep time
+    const sleepNeeded = cycles * CYCLE_MINUTES + fallAsleepMinutes;
     const bedTime = subMinutes(wakeTime, sleepNeeded);
 
     results.push({
@@ -117,6 +136,7 @@ export function calculateSleepTimes(wakeTime: Date): SleepOption[] {
  *
  * @param mode - The calculation mode: 'bedtime' or 'waketime'
  * @param inputTime - The reference time for calculation
+ * @param fallAsleepMinutes - Time it takes to fall asleep in minutes (defaults to FALL_ASLEEP_MINUTES)
  * @returns Array of SleepOption objects
  *
  * @example
@@ -126,12 +146,20 @@ export function calculateSleepTimes(wakeTime: Date): SleepOption[] {
  * @example
  * // Mode B: Calculate bedtimes from wake time
  * const sleepOptions = calculateSleepOptions('waketime', new Date('2026-02-03T07:00:00'));
+ *
+ * @example
+ * // With custom fall asleep time
+ * const sleepOptions = calculateSleepOptions('bedtime', new Date('2026-02-02T23:00:00'), 20);
  */
-export function calculateSleepOptions(mode: SleepMode, inputTime: Date): SleepOption[] {
+export function calculateSleepOptions(
+  mode: SleepMode,
+  inputTime: Date,
+  fallAsleepMinutes: number = FALL_ASLEEP_MINUTES
+): SleepOption[] {
   if (mode === 'bedtime') {
-    return calculateWakeTimes(inputTime);
+    return calculateWakeTimes(inputTime, fallAsleepMinutes);
   }
-  return calculateSleepTimes(inputTime);
+  return calculateSleepTimes(inputTime, fallAsleepMinutes);
 }
 
 // =============================================================================
@@ -152,10 +180,14 @@ export function getSleepDurationMinutes(cycles: number): number {
  * Get the total time in bed in minutes (including fall asleep time)
  *
  * @param cycles - Number of sleep cycles
+ * @param fallAsleepMinutes - Time it takes to fall asleep in minutes (defaults to FALL_ASLEEP_MINUTES)
  * @returns Total minutes in bed
  */
-export function getTotalBedTimeMinutes(cycles: number): number {
-  return cycles * CYCLE_MINUTES + FALL_ASLEEP_MINUTES;
+export function getTotalBedTimeMinutes(
+  cycles: number,
+  fallAsleepMinutes: number = FALL_ASLEEP_MINUTES
+): number {
+  return cycles * CYCLE_MINUTES + fallAsleepMinutes;
 }
 
 /**

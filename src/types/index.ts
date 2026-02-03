@@ -73,27 +73,18 @@ export interface TimerState {
 }
 
 // =============================================================================
-// Sound Types
-// =============================================================================
-
-/**
- * Available sound options for timer completion alerts
- */
-export type SoundType = 'chime' | 'bell' | 'tone' | 'none';
-
-// =============================================================================
 // Settings Types
 // =============================================================================
 
 /**
  * Valid setting keys for the application
  */
-export type SettingKey = 'lastModule' | 'theme' | 'soundPreference';
+export type SettingKey = 'lastModule' | 'theme' | 'sleepOnsetMinutes';
 
 /**
  * Module identifiers for navigation
  */
-export type ModuleId = 'planner' | 'sleep' | 'timer';
+export type ModuleId = 'planner' | 'sleep' | 'timer' | 'settings';
 
 /**
  * Theme options

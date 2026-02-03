@@ -2,7 +2,7 @@
  * BottomNavigation - iOS-style bottom tab bar navigation component
  *
  * Provides fixed bottom tab navigation for the ЩА (SHA) Mini App.
- * Tabs: Планы (Planner), Сон (Sleep), Таймер (Timer)
+ * Tabs: Планы (Planner), Сон (Sleep), Таймер (Timer), Настройки (Settings)
  *
  * Features:
  * - Fixed position at screen bottom
@@ -108,6 +108,28 @@ function TimerIcon({ active }: { active: boolean }) {
   );
 }
 
+/**
+ * Settings/Gear icon for Settings tab
+ */
+function SettingsIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={active ? 2 : 1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" />
+    </svg>
+  );
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -143,6 +165,7 @@ const TABS: Tab[] = [
   { id: 'planner', label: 'Планы', Icon: ChecklistIcon },
   { id: 'sleep', label: 'Сон', Icon: MoonIcon },
   { id: 'timer', label: 'Таймер', Icon: TimerIcon },
+  { id: 'settings', label: 'Настройки', Icon: SettingsIcon },
 ];
 
 // =============================================================================
@@ -180,7 +203,7 @@ function saveLastModule(module: ModuleId): void {
  * Type guard to check if a string is a valid ModuleId
  */
 function isValidModule(value: string): value is ModuleId {
-  return value === 'planner' || value === 'sleep' || value === 'timer';
+  return value === 'planner' || value === 'sleep' || value === 'timer' || value === 'settings';
 }
 
 // =============================================================================
@@ -224,8 +247,8 @@ export function BottomNavigation({
     <nav
       className="fixed bottom-0 left-0 right-0 flex items-center justify-around"
       style={{
-        height: `calc(var(--height-bottom-nav) + var(--safe-area-bottom))`,
-        paddingBottom: 'var(--safe-area-bottom)',
+        height: `calc(var(--height-bottom-nav) + var(--safe-area-bottom) + 24px)`,
+        paddingBottom: 'calc(var(--safe-area-bottom) + 24px)',
         backgroundColor: 'var(--color-bg-elevated)',
         borderTop: '1px solid var(--color-border-thin)',
         zIndex: 'var(--z-fixed)',
