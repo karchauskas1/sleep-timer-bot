@@ -247,8 +247,8 @@ export function BottomNavigation({
     <nav
       className="fixed bottom-0 left-0 right-0 flex items-center justify-around"
       style={{
-        height: `calc(var(--height-bottom-nav) + var(--safe-area-bottom) + 24px)`,
-        paddingBottom: 'calc(var(--safe-area-bottom) + 24px)',
+        height: `calc(var(--height-bottom-nav) + var(--safe-area-bottom) + 40px)`,
+        paddingBottom: 'calc(var(--safe-area-bottom) + 40px)',
         backgroundColor: 'var(--color-bg-elevated)',
         borderTop: '1px solid var(--color-border-thin)',
         zIndex: 'var(--z-fixed)',
