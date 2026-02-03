@@ -29,6 +29,7 @@ import { getSetting } from '@/shared/utils/storage';
 import { TimerDisplay } from '@/modules/timer/components/TimerDisplay';
 import { TimerPresets } from '@/modules/timer/components/TimerPresets';
 import { CustomTimeInput } from '@/modules/timer/components/CustomTimeInput';
+import { SoundSelector } from '@/modules/timer/components/SoundSelector';
 import type { SoundType } from '@/types';
 
 // =============================================================================
@@ -265,6 +266,17 @@ export function Timer({ className = '' }: TimerProps) {
                 className="w-full"
               >
                 <CustomTimeInput onStart={handleStart} />
+              </motion.div>
+
+              {/* Sound Selector Section */}
+              <motion.div
+                variants={sectionVariants}
+                className="w-full"
+                style={{
+                  marginTop: 'var(--space-xl)',
+                }}
+              >
+                <SoundSelector />
               </motion.div>
             </motion.div>
           ) : (
