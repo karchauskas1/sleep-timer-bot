@@ -1,0 +1,411 @@
+/* Animations - CSS Animation Classes */
+/* ЩА (SHA) Telegram Mini App */
+/* Philosophy: Smooth, subtle, no bounce or spring effects */
+
+/* ========================
+   KEYFRAME DEFINITIONS
+   ======================== */
+
+/* Fade Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Slide Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+}
+
+/* Scale Animations */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* Modal/Overlay Animations */
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* Task Completion Animation */
+@keyframes taskComplete {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Pulse Animation (subtle) */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Timer Tick Animation */
+@keyframes timerTick {
+  0% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Shimmer Loading Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ========================
+   ANIMATION UTILITY CLASSES
+   ======================== */
+
+/* Fade */
+.animate-fade-in {
+  animation: fadeIn var(--duration-base) var(--ease-out) forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut var(--duration-base) var(--ease-out) forwards;
+}
+
+/* Slide */
+.animate-slide-in-up {
+  animation: slideInUp var(--duration-base) var(--ease-out) forwards;
+}
+
+.animate-slide-in-down {
+  animation: slideInDown var(--duration-base) var(--ease-out) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--duration-base) var(--ease-out) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--duration-base) var(--ease-out) forwards;
+}
+
+.animate-slide-out-left {
+  animation: slideOutLeft var(--duration-base) var(--ease-out) forwards;
+}
+
+.animate-slide-out-right {
+  animation: slideOutRight var(--duration-base) var(--ease-out) forwards;
+}
+
+/* Scale */
+.animate-scale-in {
+  animation: scaleIn var(--duration-base) var(--ease-out) forwards;
+}
+
+.animate-scale-out {
+  animation: scaleOut var(--duration-base) var(--ease-out) forwards;
+}
+
+/* Modal */
+.animate-modal-in {
+  animation: modalSlideUp var(--duration-slow) var(--ease-out) forwards;
+}
+
+.animate-modal-out {
+  animation: modalSlideDown var(--duration-slow) var(--ease-out) forwards;
+}
+
+/* Task */
+.animate-task-complete {
+  animation: taskComplete var(--duration-fast) var(--ease-out);
+}
+
+/* Timer */
+.animate-timer-tick {
+  animation: timerTick var(--duration-fast) var(--ease-out);
+}
+
+/* Pulse */
+.animate-pulse {
+  animation: pulse 2s var(--ease-in-out) infinite;
+}
+
+/* Shimmer Loading */
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s var(--ease-linear) infinite;
+}
+
+/* ========================
+   TRANSITION UTILITY CLASSES
+   ======================== */
+
+.transition-none {
+  transition: none;
+}
+
+.transition-colors {
+  transition: var(--transition-colors);
+}
+
+.transition-opacity {
+  transition: var(--transition-opacity);
+}
+
+.transition-transform {
+  transition: var(--transition-transform);
+}
+
+.transition-all {
+  transition: var(--transition-all);
+}
+
+/* Duration Modifiers */
+.duration-instant {
+  transition-duration: var(--duration-instant);
+}
+
+.duration-fast {
+  transition-duration: var(--duration-fast);
+}
+
+.duration-base {
+  transition-duration: var(--duration-base);
+}
+
+.duration-slow {
+  transition-duration: var(--duration-slow);
+}
+
+.duration-slower {
+  transition-duration: var(--duration-slower);
+}
+
+/* Easing Modifiers */
+.ease-out {
+  transition-timing-function: var(--ease-out);
+}
+
+.ease-in {
+  transition-timing-function: var(--ease-in);
+}
+
+.ease-in-out {
+  transition-timing-function: var(--ease-in-out);
+}
+
+.ease-linear {
+  transition-timing-function: var(--ease-linear);
+}
+
+/* ========================
+   LIST ANIMATION HELPERS
+   ======================== */
+
+/* Stagger children animations */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 450ms; }
+
+/* Initial state for animated elements */
+.will-animate {
+  will-change: transform, opacity;
+}
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================
+   SWIPE ACTION STYLES
+   ======================== */
+
+/* Swipe row container */
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+/* Swipe action backgrounds */
+.swipe-action-left {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-swipe-delete);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: var(--space-md);
+  opacity: 0;
+  transition: var(--transition-opacity);
+}
+
+.swipe-action-right {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-swipe-postpone);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: var(--space-md);
+  opacity: 0;
+  transition: var(--transition-opacity);
+}
+
+.swipe-row.swiping-left .swipe-action-left,
+.swipe-row.swiping-right .swipe-action-right {
+  opacity: 1;
+}
+
+/* Swipe content */
+.swipe-content {
+  position: relative;
+  z-index: var(--z-above);
+  background-color: var(--color-surface);
+  transition: var(--transition-transform);
+}

@@ -1,0 +1,250 @@
+/* Design Tokens - CSS Custom Properties */
+/* ЩА (SHA) Telegram Mini App Design System */
+
+:root {
+  /* ========================
+     COLORS - Light Theme
+     ======================== */
+
+  /* Background Colors */
+  --color-bg: #FAFAFA;
+  --color-bg-elevated: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F5F5F5;
+  --color-surface-active: #EBEBEB;
+
+  /* Text Colors */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B6B6B;
+  --color-text-muted: #A0A0A0;
+  --color-text-disabled: #C0C0C0;
+  --color-text-inverse: #FFFFFF;
+
+  /* Border Colors */
+  --color-border: #E5E5E5;
+  --color-border-thin: #F0F0F0;
+  --color-border-focus: #2D2D2D;
+
+  /* Accent Colors */
+  --color-accent: #2D2D2D;
+  --color-accent-hover: #1A1A1A;
+  --color-accent-muted: #6B6B6B;
+
+  /* State Colors - Minimal, not vibrant */
+  --color-success: #3D3D3D;
+  --color-success-bg: #F0F0F0;
+  --color-error: #8B4B4B;
+  --color-error-bg: #FAF0F0;
+  --color-warning: #7B6B4B;
+  --color-warning-bg: #FAF8F0;
+
+  /* Swipe Action Colors */
+  --color-swipe-delete: #D4A5A5;
+  --color-swipe-postpone: #A5C4D4;
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.4);
+  --color-overlay-light: rgba(0, 0, 0, 0.1);
+
+  /* ========================
+     SPACING
+     ======================== */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0-5: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* Component-specific spacing */
+  --space-input-x: 12px;
+  --space-input-y: 10px;
+  --space-card-x: 16px;
+  --space-card-y: 12px;
+  --space-list-gap: 8px;
+  --space-section-gap: 24px;
+
+  /* ========================
+     TYPOGRAPHY
+     ======================== */
+
+  /* Font Family */
+  --font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-family-mono: 'SF Mono', 'Menlo', 'Monaco', monospace;
+
+  /* Font Sizes */
+  --font-2xs: 10px;
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-base: 16px;
+  --font-lg: 20px;
+  --font-xl: 28px;
+  --font-2xl: 36px;
+  --font-3xl: 48px;
+  --font-timer: 56px;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-none: 1;
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+  --letter-spacing-wider: 0.04em;
+
+  /* ========================
+     ANIMATION
+     ======================== */
+
+  /* Durations */
+  --duration-instant: 50ms;
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 400ms;
+
+  /* Easing Functions - Smooth, no bounce */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-linear: linear;
+
+  /* Common Transitions */
+  --transition-colors: color var(--duration-fast) var(--ease-out),
+                       background-color var(--duration-fast) var(--ease-out),
+                       border-color var(--duration-fast) var(--ease-out);
+  --transition-opacity: opacity var(--duration-base) var(--ease-out);
+  --transition-transform: transform var(--duration-base) var(--ease-out);
+  --transition-all: all var(--duration-base) var(--ease-out);
+
+  /* ========================
+     BORDER RADIUS
+     ======================== */
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ========================
+     SHADOWS - Minimal, subtle
+     ======================== */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  /* ========================
+     Z-INDEX SCALE
+     ======================== */
+  --z-base: 0;
+  --z-above: 1;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-max: 9999;
+
+  /* ========================
+     COMPONENT SIZES
+     ======================== */
+
+  /* Input Heights */
+  --height-input-sm: 32px;
+  --height-input-md: 40px;
+  --height-input-lg: 48px;
+
+  /* Button Heights */
+  --height-button-sm: 32px;
+  --height-button-md: 40px;
+  --height-button-lg: 48px;
+
+  /* Touch Targets - Minimum 44px for accessibility */
+  --min-touch-target: 44px;
+
+  /* Checkbox Size */
+  --size-checkbox: 22px;
+
+  /* Navigation */
+  --height-nav: 48px;
+
+  /* Task Row */
+  --height-task-row: 56px;
+
+  /* Swipe Action Threshold */
+  --swipe-threshold: 80px;
+}
+
+/* ========================
+   DARK THEME
+   ======================== */
+[data-theme="dark"] {
+  /* Background Colors */
+  --color-bg: #0A0A0A;
+  --color-bg-elevated: #141414;
+  --color-surface: #141414;
+  --color-surface-hover: #1A1A1A;
+  --color-surface-active: #242424;
+
+  /* Text Colors */
+  --color-text-primary: #F0F0F0;
+  --color-text-secondary: #A0A0A0;
+  --color-text-muted: #6B6B6B;
+  --color-text-disabled: #4A4A4A;
+  --color-text-inverse: #0A0A0A;
+
+  /* Border Colors */
+  --color-border: #2D2D2D;
+  --color-border-thin: #1A1A1A;
+  --color-border-focus: #E5E5E5;
+
+  /* Accent Colors */
+  --color-accent: #E5E5E5;
+  --color-accent-hover: #FFFFFF;
+  --color-accent-muted: #A0A0A0;
+
+  /* State Colors */
+  --color-success: #C0C0C0;
+  --color-success-bg: #1A1A1A;
+  --color-error: #D4A5A5;
+  --color-error-bg: #1A1414;
+  --color-warning: #D4C4A5;
+  --color-warning-bg: #1A1814;
+
+  /* Swipe Action Colors */
+  --color-swipe-delete: #8B4B4B;
+  --color-swipe-postpone: #4B6B8B;
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-overlay-light: rgba(255, 255, 255, 0.05);
+
+  /* Shadows - Darker in dark mode */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.35);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
