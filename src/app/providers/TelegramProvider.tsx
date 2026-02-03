@@ -67,6 +67,10 @@ interface TelegramContextValue {
   close: () => void;
   /** Expand the Mini App to full height */
   expand: () => void;
+  /** Disable vertical swipes (prevents swipe-to-close during scroll interactions) */
+  disableVerticalSwipes: () => void;
+  /** Re-enable vertical swipes (restore normal swipe-to-close behavior) */
+  enableVerticalSwipes: () => void;
   /** User data from Telegram (if available) */
   user: typeof WebApp.initDataUnsafe.user | undefined;
   /** Platform the app is running on */
@@ -247,6 +251,28 @@ export function TelegramProvider({ children }: TelegramProviderProps) {
     }
   }, []);
 
+  // Disable vertical swipes (prevents swipe-to-close during scroll interactions)
+  const disableVerticalSwipes = useCallback(() => {
+    try {
+      if (typeof WebApp.disableVerticalSwipes === 'function') {
+        WebApp.disableVerticalSwipes();
+      }
+    } catch {
+      // Silently fail if not supported (e.g., in browser testing)
+    }
+  }, []);
+
+  // Re-enable vertical swipes (restore normal swipe-to-close behavior)
+  const enableVerticalSwipes = useCallback(() => {
+    try {
+      if (typeof WebApp.enableVerticalSwipes === 'function') {
+        WebApp.enableVerticalSwipes();
+      }
+    } catch {
+      // Silently fail if not supported (e.g., in browser testing)
+    }
+  }, []);
+
   // Context value with all Telegram functionality
   const value: TelegramContextValue = {
     isReady,
@@ -254,6 +280,8 @@ export function TelegramProvider({ children }: TelegramProviderProps) {
     haptic,
     close,
     expand,
+    disableVerticalSwipes,
+    enableVerticalSwipes,
     user: WebApp.initDataUnsafe?.user,
     platform: WebApp.platform || 'unknown',
   };

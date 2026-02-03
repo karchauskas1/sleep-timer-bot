@@ -15,6 +15,7 @@
 import { useRef, useCallback, useEffect, useState, useMemo, memo } from 'react';
 import { motion, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
 import { useHaptic } from '@/shared/hooks/useHaptic';
+import { useTelegramContext } from '@/app/providers/TelegramProvider';
 
 // =============================================================================
 // Types
@@ -114,10 +115,14 @@ const WheelColumn = memo(function WheelColumn({
   ariaLabel,
 }: WheelColumnProps) {
   const haptic = useHaptic();
+  const { disableVerticalSwipes, enableVerticalSwipes } = useTelegramContext();
   const containerRef = useRef<HTMLDivElement>(null);
   const y = useMotionValue(0);
   const lastValueRef = useRef(selectedValue);
   const isDraggingRef = useRef(false);
+
+  // Track if touch is active (for cleanup purposes)
+  const isTouchActiveRef = useRef(false);
 
   // Calculate initial offset based on selected value
   const selectedIndex = values.indexOf(selectedValue);
@@ -255,6 +260,88 @@ const WheelColumn = memo(function WheelColumn({
     [disabled, values, y, onValueChange, haptic]
   );
 
+  // ==========================================================================
+  // Touch Event Handlers - Telegram Swipe Control Integration
+  // ==========================================================================
+
+  /**
+   * Handle touch start - disable Telegram's swipe-to-close while interacting
+   * This prevents the app from closing when scrolling the time wheel
+   */
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (disabled) return;
+
+      // Prevent event from bubbling to Telegram WebApp
+      e.stopPropagation();
+
+      // Mark touch as active
+      isTouchActiveRef.current = true;
+
+      // Disable Telegram's swipe-to-close while interacting with wheel
+      disableVerticalSwipes();
+    },
+    [disabled, disableVerticalSwipes]
+  );
+
+  /**
+   * Handle touch move - prevent propagation to avoid Telegram gestures
+   */
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (disabled) return;
+
+      // Prevent event from bubbling to Telegram WebApp
+      e.stopPropagation();
+    },
+    [disabled]
+  );
+
+  /**
+   * Handle touch end - re-enable Telegram swipes after interaction
+   */
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      // Prevent event from bubbling
+      e.stopPropagation();
+
+      // Mark touch as inactive
+      isTouchActiveRef.current = false;
+
+      // Re-enable Telegram swipes after interaction
+      enableVerticalSwipes();
+    },
+    [enableVerticalSwipes]
+  );
+
+  /**
+   * Handle touch cancel - cleanup on interrupted touch (e.g., phone call)
+   */
+  const handleTouchCancel = useCallback(
+    (e: React.TouchEvent) => {
+      // Prevent event from bubbling
+      e.stopPropagation();
+
+      // Mark touch as inactive
+      isTouchActiveRef.current = false;
+
+      // Re-enable Telegram swipes on cancel
+      enableVerticalSwipes();
+    },
+    [enableVerticalSwipes]
+  );
+
+  // Cleanup effect: ensure swipes are re-enabled when component unmounts
+  // or when user navigates away while touching
+  useEffect(() => {
+    return () => {
+      // If touch was active when unmounting, re-enable swipes
+      if (isTouchActiveRef.current) {
+        enableVerticalSwipes();
+      }
+    };
+  }, [enableVerticalSwipes]);
+
   // Calculate drag constraints
   const maxY = 0;
   const minY = -(values.length - 1) * ITEM_HEIGHT;
@@ -263,8 +350,16 @@ const WheelColumn = memo(function WheelColumn({
     <div
       ref={containerRef}
       className="relative overflow-hidden select-none"
-      style={{ height: WHEEL_HEIGHT }}
+      style={{
+        height: WHEEL_HEIGHT,
+        // Prevent browser's default touch behaviors to avoid gesture conflicts
+        touchAction: 'none',
+      }}
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
       role="listbox"
       aria-label={ariaLabel}
       aria-disabled={disabled}

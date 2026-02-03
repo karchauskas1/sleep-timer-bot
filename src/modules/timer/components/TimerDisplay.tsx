@@ -269,8 +269,7 @@ export const TimerDisplay = memo(function TimerDisplay({
 
         {/* Time display */}
         <motion.div
-          key={formattedTime}
-          initial={{ opacity: 0.8 }}
+          initial={false}
           animate={{ opacity: 1 }}
           className="relative z-10 flex flex-col items-center"
         >
