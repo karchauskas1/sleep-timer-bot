@@ -264,8 +264,8 @@ export function BottomNavigation({
     <nav
       className="fixed bottom-0 left-0 right-0 flex items-center justify-around"
       style={{
-        height: `calc(var(--height-bottom-nav) + env(safe-area-inset-bottom, 34px))`,
-        paddingBottom: 'env(safe-area-inset-bottom, 34px)',
+        height: `calc(var(--height-bottom-nav) + env(safe-area-inset-bottom, 34px) + 20px)`,
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 20px)',
         backgroundColor: 'var(--glass-bg)',
         backdropFilter: 'var(--glass-blur)',
         WebkitBackdropFilter: 'var(--glass-blur)',
@@ -280,7 +280,7 @@ export function BottomNavigation({
         className="absolute rounded-lg"
         style={{
           width: '25%',
-          height: 'calc(100% - env(safe-area-inset-bottom, 34px) - 8px)',
+          height: 'calc(100% - env(safe-area-inset-bottom, 34px) - 20px - 8px)',
           top: 4,
           left: 0,
           backgroundColor: 'var(--nav-indicator-bg)',
