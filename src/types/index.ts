@@ -89,12 +89,17 @@ export interface TimerHistoryEntry {
 /**
  * Valid setting keys for the application
  */
-export type SettingKey = 'lastModule' | 'theme';
+export type SettingKey = 'lastModule' | 'theme' | 'sleepOnsetMinutes' | 'soundPreference';
+
+/**
+ * Sound types for timer completion
+ */
+export type SoundType = 'chime' | 'bell' | 'tone' | 'none';
 
 /**
  * Module identifiers for navigation
  */
-export type ModuleId = 'planner' | 'sleep' | 'timer';
+export type ModuleId = 'planner' | 'sleep' | 'timer' | 'settings';
 
 /**
  * Theme options
