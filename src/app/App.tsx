@@ -112,9 +112,8 @@ export function App({ className = '' }: AppProps) {
         <div
           className={`sha-app ${className}`}
           style={{
-            // Ensure app fills viewport
-            minHeight: '100vh',
-            minHeight: '100dvh', // Dynamic viewport height for mobile
+            // Ensure app fills viewport (dynamic viewport height for mobile, fallback to vh)
+            minHeight: '100dvh',
             // Apply background color at root level
             backgroundColor: 'var(--color-bg)',
           }}
