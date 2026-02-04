@@ -220,7 +220,7 @@ export function Planner({ className = '' }: PlannerProps) {
                 overflowY: 'auto',
               }}
             >
-              <TaskList onPostpone={handlePostpone} />
+              <TaskList onPostpone={handlePostpone} singleDayMode />
             </div>
 
             {/* Footer with Recurring Tasks Link */}
