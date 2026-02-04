@@ -1071,10 +1071,10 @@ export function DatePicker({
                       fontFamily: 'var(--font-family)',
                       fontSize: 'var(--font-lg)',
                       color: selectedDate
-                        ? '#FFFFFF'
+                        ? 'var(--color-calendar-selection-text)'
                         : 'var(--color-text-disabled)',
                       backgroundColor: selectedDate
-                        ? '#3B82F6'
+                        ? 'var(--color-calendar-selection)'
                         : 'var(--color-border)',
                       border: 'none',
                       borderRadius: 'var(--radius-full)',
