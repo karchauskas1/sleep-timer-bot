@@ -38,7 +38,7 @@
  * />
  */
 
-import { useCallback, useMemo, useState, useRef } from 'react';
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -102,6 +102,20 @@ const MONTH_SWIPE_ANIMATION = {
  * Debounce time to prevent rapid month navigation triggers
  */
 const MONTH_DEBOUNCE_MS = 300;
+
+/**
+ * Keyboard keys for navigation
+ */
+const KEYBOARD_KEYS = {
+  ESCAPE: 'Escape',
+  ENTER: 'Enter',
+  SPACE: ' ',
+  ARROW_LEFT: 'ArrowLeft',
+  ARROW_RIGHT: 'ArrowRight',
+  ARROW_UP: 'ArrowUp',
+  ARROW_DOWN: 'ArrowDown',
+  TAB: 'Tab',
+} as const;
 
 /**
  * Backdrop animation variants
@@ -401,6 +415,59 @@ export function DatePicker({
    */
   const swipeHapticTriggeredRef = useRef<boolean>(false);
 
+  /**
+   * Ref for the first focusable element (for focus trap)
+   */
+  const firstFocusableRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * Ref to track if navigation is in progress (prevents race conditions)
+   */
+  const navigationInProgressRef = useRef<boolean>(false);
+
+  /**
+   * Previous month for aria-live announcement
+   */
+  const [announcedMonth, setAnnouncedMonth] = useState<string>('');
+
+  // -------------------------------------------------------------------------
+  // Effects
+  // -------------------------------------------------------------------------
+
+  /**
+   * Reset state when modal opens/closes
+   * - Reset to current month when opening
+   * - Clear selection when closing
+   * - Focus first element when opening
+   */
+  useEffect(() => {
+    if (isOpen) {
+      // Reset to current month and clear selection when opening
+      setDisplayedMonth(new Date());
+      setSelectedDate(null);
+      navigationInProgressRef.current = false;
+      swipeHapticTriggeredRef.current = false;
+
+      // Focus first element after animation completes
+      const focusTimer = setTimeout(() => {
+        firstFocusableRef.current?.focus();
+      }, 250);
+
+      return () => clearTimeout(focusTimer);
+    }
+  }, [isOpen]);
+
+  /**
+   * Update announced month for screen readers
+   * Uses aria-live region for month changes
+   */
+  useEffect(() => {
+    if (isOpen) {
+      const newAnnouncement = formatMonthYear(displayedMonth);
+      setAnnouncedMonth(newAnnouncement);
+    }
+  }, [displayedMonth, isOpen]);
+
   // -------------------------------------------------------------------------
   // Memoized Values
   // -------------------------------------------------------------------------
@@ -482,25 +549,60 @@ export function DatePicker({
     event.stopPropagation();
   }, []);
 
+  /**
+   * Handle keyboard navigation for the dialog
+   */
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      switch (event.key) {
+        case KEYBOARD_KEYS.ESCAPE:
+          event.preventDefault();
+          haptic.light();
+          onClose();
+          break;
+        default:
+          break;
+      }
+    },
+    [haptic, onClose]
+  );
+
   // -------------------------------------------------------------------------
   // Calendar Handlers
   // -------------------------------------------------------------------------
 
   /**
-   * Navigate to previous month
+   * Navigate to previous month with debounce protection
    */
   const handlePreviousMonth = useCallback(() => {
-    if (!canGoPrevious) return;
+    if (!canGoPrevious || navigationInProgressRef.current) return;
+
+    // Set navigation in progress to prevent rapid clicks
+    navigationInProgressRef.current = true;
     haptic.light();
     setDisplayedMonth((prev) => getPreviousMonth(prev));
+
+    // Reset navigation lock after debounce period
+    setTimeout(() => {
+      navigationInProgressRef.current = false;
+    }, MONTH_DEBOUNCE_MS);
   }, [haptic, canGoPrevious]);
 
   /**
-   * Navigate to next month
+   * Navigate to next month with debounce protection
    */
   const handleNextMonth = useCallback(() => {
+    if (navigationInProgressRef.current) return;
+
+    // Set navigation in progress to prevent rapid clicks
+    navigationInProgressRef.current = true;
     haptic.light();
     setDisplayedMonth((prev) => getNextMonth(prev));
+
+    // Reset navigation lock after debounce period
+    setTimeout(() => {
+      navigationInProgressRef.current = false;
+    }, MONTH_DEBOUNCE_MS);
   }, [haptic]);
 
   /**
@@ -569,6 +671,7 @@ export function DatePicker({
 
   /**
    * Handle swipe drag end on calendar - navigate to previous/next month
+   * Includes protection against rapid swipes and race conditions
    */
   const handleCalendarDragEnd = useCallback(
     async (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -578,8 +681,11 @@ export function DatePicker({
       // Reset haptic trigger tracking
       swipeHapticTriggeredRef.current = false;
 
-      // Check debounce
-      if (now - lastSwipeRef.current < MONTH_DEBOUNCE_MS) {
+      // Check debounce and navigation lock
+      if (
+        now - lastSwipeRef.current < MONTH_DEBOUNCE_MS ||
+        navigationInProgressRef.current
+      ) {
         await calendarControls.start({ x: 0 }, MONTH_SWIPE_ANIMATION);
         return;
       }
@@ -587,6 +693,7 @@ export function DatePicker({
       // Swipe left (negative offset) -> next month
       if (offsetX <= -MONTH_SWIPE_THRESHOLD) {
         lastSwipeRef.current = now;
+        navigationInProgressRef.current = true;
         haptic.light();
         // Animate out to the left
         await calendarControls.start({ x: -MONTH_MAX_DRAG, opacity: 0 }, MONTH_SWIPE_ANIMATION);
@@ -594,10 +701,12 @@ export function DatePicker({
         // Reset position and animate in
         calendarX.set(MONTH_MAX_DRAG);
         await calendarControls.start({ x: 0, opacity: 1 }, MONTH_SWIPE_ANIMATION);
+        navigationInProgressRef.current = false;
       }
       // Swipe right (positive offset) -> previous month
       else if (offsetX >= MONTH_SWIPE_THRESHOLD && canGoPrevious) {
         lastSwipeRef.current = now;
+        navigationInProgressRef.current = true;
         haptic.light();
         // Animate out to the right
         await calendarControls.start({ x: MONTH_MAX_DRAG, opacity: 0 }, MONTH_SWIPE_ANIMATION);
@@ -605,6 +714,7 @@ export function DatePicker({
         // Reset position and animate in
         calendarX.set(-MONTH_MAX_DRAG);
         await calendarControls.start({ x: 0, opacity: 1 }, MONTH_SWIPE_ANIMATION);
+        navigationInProgressRef.current = false;
       }
       // Did not meet threshold - snap back
       else {
@@ -619,7 +729,7 @@ export function DatePicker({
   // -------------------------------------------------------------------------
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
           className={`fixed inset-0 z-50 ${className}`}
@@ -627,6 +737,7 @@ export function DatePicker({
           animate="visible"
           exit="hidden"
           data-testid={testId}
+          onKeyDown={handleKeyDown}
         >
           {/* Backdrop */}
           <motion.div
@@ -635,8 +746,11 @@ export function DatePicker({
             className="absolute inset-0"
             style={{
               backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              willChange: 'opacity',
             }}
             onClick={handleBackdropClick}
+            role="button"
+            tabIndex={-1}
             aria-label="Закрыть выбор даты"
           />
 
@@ -651,11 +765,12 @@ export function DatePicker({
               borderTopRightRadius: 'var(--radius-lg)',
               maxHeight: '70vh',
               overflow: 'hidden',
+              willChange: 'transform, opacity',
             }}
             onClick={handleSheetClick}
             role="dialog"
             aria-modal="true"
-            aria-label="Выбор даты"
+            aria-labelledby="datepicker-title"
           >
             {/* Handle indicator */}
             <div
@@ -680,9 +795,31 @@ export function DatePicker({
                 maxHeight: 'calc(70vh - 32px)',
               }}
             >
+              {/* Screen reader announcement for month changes */}
+              <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+                style={{
+                  position: 'absolute',
+                  width: '1px',
+                  height: '1px',
+                  padding: 0,
+                  margin: '-1px',
+                  overflow: 'hidden',
+                  clip: 'rect(0, 0, 0, 0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                {announcedMonth}
+              </div>
+
               {/* Section: Quick options */}
-              <div style={{ marginBottom: 'var(--space-md)' }}>
+              <div style={{ marginBottom: 'var(--space-md)' }} role="region" aria-label="Быстрый выбор даты">
                 <span
+                  id="datepicker-title"
                   style={{
                     fontFamily: 'var(--font-family)',
                     fontSize: 'var(--font-xs)',
@@ -701,9 +838,12 @@ export function DatePicker({
                 <div
                   className="grid grid-cols-3 gap-[var(--space-sm)]"
                   style={{ marginBottom: 'var(--space-sm)' }}
+                  role="group"
+                  aria-label="Быстрые опции"
                 >
                   {/* Tomorrow - highlighted */}
                   <button
+                    ref={firstFocusableRef}
                     type="button"
                     onClick={() => handleSelectOption(quickOptions[0].date)}
                     style={{
@@ -836,8 +976,9 @@ export function DatePicker({
               />
 
               {/* Section: Calendar Grid */}
-              <div>
+              <div role="region" aria-label="Календарь">
                 <span
+                  id="calendar-section-title"
                   style={{
                     fontFamily: 'var(--font-family)',
                     fontSize: 'var(--font-xs)',
@@ -932,10 +1073,14 @@ export function DatePicker({
                     gap: 'var(--space-xs)',
                     marginBottom: 'var(--space-xs)',
                   }}
+                  role="row"
+                  aria-label="Дни недели"
                 >
                   {CALENDAR_DAY_NAMES.map((dayName) => (
                     <div
                       key={dayName}
+                      role="columnheader"
+                      aria-label={dayName}
                       style={{
                         fontFamily: 'var(--font-family)',
                         fontSize: 'var(--font-xs)',
@@ -963,6 +1108,7 @@ export function DatePicker({
                       display: 'grid',
                       gridTemplateColumns: 'repeat(7, 1fr)',
                       gap: 'var(--space-xs)',
+                      willChange: 'transform, opacity',
                     }}
                     drag="x"
                     dragConstraints={{
@@ -974,7 +1120,8 @@ export function DatePicker({
                     onDrag={handleCalendarDrag}
                     onDragEnd={handleCalendarDragEnd}
                     animate={calendarControls}
-                    aria-label="Calendar grid - swipe left for next month, swipe right for previous month"
+                    role="grid"
+                    aria-label={`Календарь на ${displayedMonthYear}. Проведите влево для следующего месяца, вправо для предыдущего.`}
                   >
                     {calendarDays.map((day) => {
                       const isSelected = isDateSelected(day.date);
@@ -982,12 +1129,21 @@ export function DatePicker({
                       const isDisabled = day.isDisabled;
                       const isTodayDate = day.isToday;
 
+                      // Build descriptive label for screen readers
+                      const dayLabel = `${day.day} ${format(day.date, 'MMMM yyyy', { locale: ru })}${
+                        isTodayDate ? ', сегодня' : ''
+                      }${isSelected ? ', выбрано' : ''}${
+                        isDisabled ? ', недоступно' : ''
+                      }`;
+
                       return (
                         <button
                           key={day.dateStr}
                           type="button"
+                          role="gridcell"
                           onClick={() => handleDaySelect(day)}
                           disabled={isDisabled}
+                          tabIndex={isDisabled ? -1 : 0}
                           style={{
                             width: '100%',
                             aspectRatio: '1',
@@ -1017,9 +1173,10 @@ export function DatePicker({
                             cursor: isDisabled ? 'not-allowed' : 'pointer',
                             transition: 'var(--transition-colors)',
                           }}
-                          aria-label={`${day.day} ${displayedMonthYear}`}
-                          aria-pressed={isSelected}
+                          aria-label={dayLabel}
+                          aria-selected={isSelected}
                           aria-disabled={isDisabled}
+                          aria-current={isTodayDate ? 'date' : undefined}
                         >
                           {day.day}
                         </button>
@@ -1038,6 +1195,8 @@ export function DatePicker({
                     paddingTop: 'var(--space-md)',
                     borderTop: '1px solid var(--color-border-thin)',
                   }}
+                  role="group"
+                  aria-label="Действия с календарём"
                 >
                   <button
                     type="button"
@@ -1053,7 +1212,7 @@ export function DatePicker({
                       cursor: 'pointer',
                       transition: 'var(--transition-colors)',
                     }}
-                    aria-label="Сбросить выбор"
+                    aria-label="Сбросить выбор и вернуться к текущему месяцу"
                   >
                     Сброс
                   </button>
@@ -1081,7 +1240,12 @@ export function DatePicker({
                       cursor: selectedDate ? 'pointer' : 'not-allowed',
                       transition: 'var(--transition-colors)',
                     }}
-                    aria-label="Подтвердить выбор"
+                    aria-label={
+                      selectedDate
+                        ? `Подтвердить выбор: ${format(selectedDate, 'd MMMM yyyy', { locale: ru })}`
+                        : 'Подтвердить выбор (сначала выберите дату)'
+                    }
+                    aria-disabled={!selectedDate}
                   >
                     ✓
                   </button>
