@@ -38,3 +38,5 @@ dist-ssr
 # Auto Claude data directory
 .auto-claude/
 .vercel
+.claude_settings.json
+.auto-claude-status
