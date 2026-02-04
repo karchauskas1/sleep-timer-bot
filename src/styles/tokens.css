@@ -42,6 +42,10 @@
   --color-swipe-delete: #D4A5A5;
   --color-swipe-postpone: #A5C4D4;
 
+  /* Calendar Selection - Blue circle for selected dates */
+  --color-calendar-selection: #3B82F6;
+  --color-calendar-selection-text: #FFFFFF;
+
   /* Overlay */
   --color-overlay: rgba(0, 0, 0, 0.4);
   --color-overlay-light: rgba(0, 0, 0, 0.1);
@@ -251,6 +255,10 @@
   /* Swipe Action Colors */
   --color-swipe-delete: #8B4B4B;
   --color-swipe-postpone: #4B6B8B;
+
+  /* Calendar Selection - Blue circle for selected dates */
+  --color-calendar-selection: #60A5FA;
+  --color-calendar-selection-text: #0A0A0A;
 
   /* Overlay */
   --color-overlay: rgba(0, 0, 0, 0.6);

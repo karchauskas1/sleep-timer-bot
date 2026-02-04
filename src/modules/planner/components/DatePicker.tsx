@@ -1001,14 +1001,14 @@ export function DatePicker({
                               ? 'var(--font-weight-semibold)'
                               : 'var(--font-weight-normal)',
                             color: isSelected
-                              ? 'var(--color-text-inverse)'
+                              ? 'var(--color-calendar-selection-text)'
                               : isDisabled
                               ? 'var(--color-text-disabled)'
                               : isCurrentMonth
                               ? 'var(--color-text-primary)'
                               : 'var(--color-text-muted)',
                             backgroundColor: isSelected
-                              ? 'var(--color-accent)'
+                              ? 'var(--color-calendar-selection)'
                               : 'transparent',
                             border: isTodayDate && !isSelected
                               ? '1px solid var(--color-border)'
