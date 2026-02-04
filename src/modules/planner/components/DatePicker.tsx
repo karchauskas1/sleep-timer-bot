@@ -38,9 +38,25 @@
  * />
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, addDays, startOfWeek, addWeeks, isToday, isTomorrow } from 'date-fns';
+import {
+  format,
+  addDays,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+  subMonths,
+  addWeeks,
+  isToday,
+  isTomorrow,
+  isSameMonth,
+  isSameDay,
+  isBefore,
+  eachDayOfInterval,
+} from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useHaptic } from '@/shared/hooks/useHaptic';
 
@@ -73,9 +89,14 @@ const sheetVariants = {
 };
 
 /**
- * Day names in Russian (abbreviated)
+ * Day names in Russian (abbreviated) - Sunday first (for general use)
  */
 const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'] as const;
+
+/**
+ * Day names for calendar header (Monday first - European style)
+ */
+const CALENDAR_DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;
 
 // =============================================================================
 // Types
@@ -111,6 +132,24 @@ interface DateOption {
   date: string;
   /** Optional sublabel (e.g., day of week) */
   sublabel?: string;
+}
+
+/**
+ * Calendar day structure for grid rendering
+ */
+interface CalendarDay {
+  /** The date object */
+  date: Date;
+  /** Date in YYYY-MM-DD format */
+  dateStr: string;
+  /** Day of month (1-31) */
+  day: number;
+  /** Whether this day is in the currently displayed month */
+  isCurrentMonth: boolean;
+  /** Whether this is today's date */
+  isToday: boolean;
+  /** Whether this day is before the minimum selectable date */
+  isDisabled: boolean;
 }
 
 // =============================================================================
@@ -185,6 +224,90 @@ function getNextWeekOption(): DateOption {
 }
 
 // =============================================================================
+// Calendar Helpers
+// =============================================================================
+
+/**
+ * Get the calendar grid days for a given month
+ * Returns 6 weeks (42 days) to ensure consistent grid height
+ * Week starts on Monday (European style)
+ *
+ * @param displayedMonth - The month to generate calendar for
+ * @param minDate - Optional minimum selectable date (YYYY-MM-DD format)
+ */
+function getCalendarDays(displayedMonth: Date, minDate?: string): CalendarDay[] {
+  const monthStart = startOfMonth(displayedMonth);
+  const monthEnd = endOfMonth(displayedMonth);
+
+  // Get the start of the week containing the first day of the month (Monday start)
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  // Get the end of the week containing the last day of the month
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  // Parse minDate for comparison
+  const minDateObj = minDate ? new Date(minDate) : null;
+  const today = new Date();
+
+  return days.map((date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const isDisabled = minDateObj
+      ? isBefore(date, minDateObj) && !isSameDay(date, minDateObj)
+      : false;
+
+    return {
+      date,
+      dateStr,
+      day: date.getDate(),
+      isCurrentMonth: isSameMonth(date, displayedMonth),
+      isToday: isSameDay(date, today),
+      isDisabled,
+    };
+  });
+}
+
+/**
+ * Navigate to the previous month
+ */
+function getPreviousMonth(currentMonth: Date): Date {
+  return subMonths(currentMonth, 1);
+}
+
+/**
+ * Navigate to the next month
+ */
+function getNextMonth(currentMonth: Date): Date {
+  return addMonths(currentMonth, 1);
+}
+
+/**
+ * Format month and year for display in Russian
+ * Example: "Февраль 2026"
+ */
+function formatMonthYear(date: Date): string {
+  return format(date, 'LLLL yyyy', { locale: ru });
+}
+
+/**
+ * Check if navigation to previous month should be disabled
+ * (when all days in previous month are before minDate)
+ */
+function canNavigateToPreviousMonth(
+  currentMonth: Date,
+  minDate?: string
+): boolean {
+  if (!minDate) return true;
+
+  const previousMonth = getPreviousMonth(currentMonth);
+  const previousMonthEnd = endOfMonth(previousMonth);
+  const minDateObj = new Date(minDate);
+
+  // Can navigate if the end of previous month is >= minDate
+  return !isBefore(previousMonthEnd, minDateObj);
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -207,12 +330,58 @@ export function DatePicker({
 }: DatePickerProps) {
   const haptic = useHaptic();
 
+  // -------------------------------------------------------------------------
+  // Calendar State
+  // -------------------------------------------------------------------------
+
+  /**
+   * Currently displayed month in the calendar view
+   * Initialized to the current month
+   */
+  const [displayedMonth, setDisplayedMonth] = useState<Date>(() => new Date());
+
+  /**
+   * Currently selected date in the calendar
+   * null means no date is selected yet
+   */
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // -------------------------------------------------------------------------
+  // Memoized Values
+  // -------------------------------------------------------------------------
+
   // Memoize options to avoid recalculating on each render
   const quickOptions = useMemo(() => generateQuickOptions(), []);
   const nextWeekOption = useMemo(() => getNextWeekOption(), []);
 
   // Calculate minimum date (default to tomorrow)
   const effectiveMinDate = minDate ?? getTomorrowDate();
+
+  /**
+   * Calendar days for the currently displayed month
+   * Memoized to avoid recalculating on every render
+   */
+  const calendarDays = useMemo(
+    () => getCalendarDays(displayedMonth, effectiveMinDate),
+    [displayedMonth, effectiveMinDate]
+  );
+
+  /**
+   * Formatted month and year string for header display
+   * Example: "Февраль 2026"
+   */
+  const displayedMonthYear = useMemo(
+    () => formatMonthYear(displayedMonth),
+    [displayedMonth]
+  );
+
+  /**
+   * Whether navigation to previous month is allowed
+   */
+  const canGoPrevious = useMemo(
+    () => canNavigateToPreviousMonth(displayedMonth, effectiveMinDate),
+    [displayedMonth, effectiveMinDate]
+  );
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -257,6 +426,68 @@ export function DatePicker({
   const handleSheetClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
   }, []);
+
+  // -------------------------------------------------------------------------
+  // Calendar Handlers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Navigate to previous month
+   */
+  const handlePreviousMonth = useCallback(() => {
+    if (!canGoPrevious) return;
+    haptic.light();
+    setDisplayedMonth((prev) => getPreviousMonth(prev));
+  }, [haptic, canGoPrevious]);
+
+  /**
+   * Navigate to next month
+   */
+  const handleNextMonth = useCallback(() => {
+    haptic.light();
+    setDisplayedMonth((prev) => getNextMonth(prev));
+  }, [haptic]);
+
+  /**
+   * Handle calendar day selection
+   */
+  const handleDaySelect = useCallback(
+    (day: CalendarDay) => {
+      if (day.isDisabled) return;
+      haptic.selectionChanged();
+      setSelectedDate(day.date);
+    },
+    [haptic]
+  );
+
+  /**
+   * Reset calendar to today's date and clear selection
+   */
+  const handleReset = useCallback(() => {
+    haptic.light();
+    setDisplayedMonth(new Date());
+    setSelectedDate(null);
+  }, [haptic]);
+
+  /**
+   * Confirm the selected date and close the picker
+   */
+  const handleConfirm = useCallback(() => {
+    if (!selectedDate) return;
+    haptic.light();
+    onSelect(format(selectedDate, 'yyyy-MM-dd'));
+  }, [haptic, onSelect, selectedDate]);
+
+  /**
+   * Check if a date is currently selected
+   */
+  const isDateSelected = useCallback(
+    (date: Date): boolean => {
+      if (!selectedDate) return false;
+      return isSameDay(date, selectedDate);
+    },
+    [selectedDate]
+  );
 
   // -------------------------------------------------------------------------
   // Render
@@ -550,4 +781,14 @@ export function DatePicker({
 // Exports
 // =============================================================================
 
-export type { DatePickerProps, DateOption };
+export type { DatePickerProps, DateOption, CalendarDay };
+
+// Export calendar helpers for potential reuse
+export {
+  getCalendarDays,
+  getPreviousMonth,
+  getNextMonth,
+  formatMonthYear,
+  canNavigateToPreviousMonth,
+  CALENDAR_DAY_NAMES,
+};
