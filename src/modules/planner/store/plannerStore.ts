@@ -16,6 +16,7 @@
  */
 
 import { create } from 'zustand';
+import { format } from 'date-fns';
 import { db } from '@/shared/utils/storage';
 import { registerHydrationCallback } from '@/shared/hooks/useStoreHydration';
 import type { Task, RecurringTask } from '@/types';
@@ -50,6 +51,8 @@ interface PlannerState {
   tasks: Task[];
   /** All recurring task definitions */
   recurringTasks: RecurringTask[];
+  /** Currently selected date in YYYY-MM-DD format */
+  selectedDate: string;
 
   // Task Actions
   /** Add a new task */
@@ -78,6 +81,10 @@ interface PlannerState {
   setTasks: (tasks: Task[]) => void;
   /** Set all recurring tasks (used for hydration) */
   setRecurringTasks: (recurringTasks: RecurringTask[]) => void;
+
+  // Date Selection Actions
+  /** Set the currently selected date */
+  setSelectedDate: (date: string) => void;
 }
 
 // =============================================================================
@@ -96,6 +103,7 @@ export const usePlannerStore = create<PlannerState>()((set, get) => ({
   // -------------------------------------------------------------------------
   tasks: [],
   recurringTasks: [],
+  selectedDate: format(new Date(), 'yyyy-MM-dd'),
 
   // -------------------------------------------------------------------------
   // Task Actions
@@ -262,11 +270,26 @@ export const usePlannerStore = create<PlannerState>()((set, get) => ({
   setRecurringTasks: (recurringTasks) => {
     set({ recurringTasks });
   },
+
+  // -------------------------------------------------------------------------
+  // Date Selection Actions
+  // -------------------------------------------------------------------------
+
+  setSelectedDate: (date) => {
+    set({ selectedDate: date });
+  },
 }));
 
 // =============================================================================
 // Selectors (for optimized re-renders)
 // =============================================================================
+
+/**
+ * Select tasks for the currently selected date
+ * Uses the selectedDate from store state
+ */
+export const selectTasksForSelectedDate = (state: PlannerState) =>
+  state.tasks.filter((task) => task.date === state.selectedDate);
 
 /**
  * Select tasks for a specific date
