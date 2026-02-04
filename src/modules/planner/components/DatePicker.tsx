@@ -38,9 +38,31 @@
  * />
  */
 
-import { useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { format, addDays, startOfWeek, addWeeks, isToday, isTomorrow } from 'date-fns';
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useAnimation,
+  type PanInfo,
+} from 'framer-motion';
+import {
+  format,
+  addDays,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+  subMonths,
+  addWeeks,
+  isToday,
+  isTomorrow,
+  isSameMonth,
+  isSameDay,
+  isBefore,
+  eachDayOfInterval,
+} from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useHaptic } from '@/shared/hooks/useHaptic';
 
@@ -55,6 +77,45 @@ const ANIMATION_CONFIG = {
   duration: 0.2,
   ease: [0.16, 1, 0.3, 1] as const,
 };
+
+/**
+ * Swipe threshold for month navigation (in pixels)
+ * Prevents accidental triggers with minimum distance requirement
+ */
+const MONTH_SWIPE_THRESHOLD = 50;
+
+/**
+ * Maximum drag distance for month swipe (prevents over-swiping)
+ */
+const MONTH_MAX_DRAG = 100;
+
+/**
+ * Animation configuration for month swipe transition
+ */
+const MONTH_SWIPE_ANIMATION = {
+  type: 'tween' as const,
+  duration: 0.2,
+  ease: [0.16, 1, 0.3, 1] as const,
+};
+
+/**
+ * Debounce time to prevent rapid month navigation triggers
+ */
+const MONTH_DEBOUNCE_MS = 300;
+
+/**
+ * Keyboard keys for navigation
+ */
+const KEYBOARD_KEYS = {
+  ESCAPE: 'Escape',
+  ENTER: 'Enter',
+  SPACE: ' ',
+  ARROW_LEFT: 'ArrowLeft',
+  ARROW_RIGHT: 'ArrowRight',
+  ARROW_UP: 'ArrowUp',
+  ARROW_DOWN: 'ArrowDown',
+  TAB: 'Tab',
+} as const;
 
 /**
  * Backdrop animation variants
@@ -73,9 +134,14 @@ const sheetVariants = {
 };
 
 /**
- * Day names in Russian (abbreviated)
+ * Day names in Russian (abbreviated) - Sunday first (for general use)
  */
 const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'] as const;
+
+/**
+ * Day names for calendar header (Monday first - European style)
+ */
+const CALENDAR_DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;
 
 // =============================================================================
 // Types
@@ -111,6 +177,24 @@ interface DateOption {
   date: string;
   /** Optional sublabel (e.g., day of week) */
   sublabel?: string;
+}
+
+/**
+ * Calendar day structure for grid rendering
+ */
+interface CalendarDay {
+  /** The date object */
+  date: Date;
+  /** Date in YYYY-MM-DD format */
+  dateStr: string;
+  /** Day of month (1-31) */
+  day: number;
+  /** Whether this day is in the currently displayed month */
+  isCurrentMonth: boolean;
+  /** Whether this is today's date */
+  isToday: boolean;
+  /** Whether this day is before the minimum selectable date */
+  isDisabled: boolean;
 }
 
 // =============================================================================
@@ -185,6 +269,90 @@ function getNextWeekOption(): DateOption {
 }
 
 // =============================================================================
+// Calendar Helpers
+// =============================================================================
+
+/**
+ * Get the calendar grid days for a given month
+ * Returns 6 weeks (42 days) to ensure consistent grid height
+ * Week starts on Monday (European style)
+ *
+ * @param displayedMonth - The month to generate calendar for
+ * @param minDate - Optional minimum selectable date (YYYY-MM-DD format)
+ */
+function getCalendarDays(displayedMonth: Date, minDate?: string): CalendarDay[] {
+  const monthStart = startOfMonth(displayedMonth);
+  const monthEnd = endOfMonth(displayedMonth);
+
+  // Get the start of the week containing the first day of the month (Monday start)
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  // Get the end of the week containing the last day of the month
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  // Parse minDate for comparison
+  const minDateObj = minDate ? new Date(minDate) : null;
+  const today = new Date();
+
+  return days.map((date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const isDisabled = minDateObj
+      ? isBefore(date, minDateObj) && !isSameDay(date, minDateObj)
+      : false;
+
+    return {
+      date,
+      dateStr,
+      day: date.getDate(),
+      isCurrentMonth: isSameMonth(date, displayedMonth),
+      isToday: isSameDay(date, today),
+      isDisabled,
+    };
+  });
+}
+
+/**
+ * Navigate to the previous month
+ */
+function getPreviousMonth(currentMonth: Date): Date {
+  return subMonths(currentMonth, 1);
+}
+
+/**
+ * Navigate to the next month
+ */
+function getNextMonth(currentMonth: Date): Date {
+  return addMonths(currentMonth, 1);
+}
+
+/**
+ * Format month and year for display in Russian
+ * Example: "Февраль 2026"
+ */
+function formatMonthYear(date: Date): string {
+  return format(date, 'LLLL yyyy', { locale: ru });
+}
+
+/**
+ * Check if navigation to previous month should be disabled
+ * (when all days in previous month are before minDate)
+ */
+function canNavigateToPreviousMonth(
+  currentMonth: Date,
+  minDate?: string
+): boolean {
+  if (!minDate) return true;
+
+  const previousMonth = getPreviousMonth(currentMonth);
+  const previousMonthEnd = endOfMonth(previousMonth);
+  const minDateObj = new Date(minDate);
+
+  // Can navigate if the end of previous month is >= minDate
+  return !isBefore(previousMonthEnd, minDateObj);
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -207,12 +375,135 @@ export function DatePicker({
 }: DatePickerProps) {
   const haptic = useHaptic();
 
+  // -------------------------------------------------------------------------
+  // Calendar State
+  // -------------------------------------------------------------------------
+
+  /**
+   * Currently displayed month in the calendar view
+   * Initialized to the current month
+   */
+  const [displayedMonth, setDisplayedMonth] = useState<Date>(() => new Date());
+
+  /**
+   * Currently selected date in the calendar
+   * null means no date is selected yet
+   */
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // -------------------------------------------------------------------------
+  // Swipe Gesture State
+  // -------------------------------------------------------------------------
+
+  /**
+   * Motion value for tracking horizontal swipe position
+   */
+  const calendarX = useMotionValue(0);
+
+  /**
+   * Animation controls for calendar swipe transitions
+   */
+  const calendarControls = useAnimation();
+
+  /**
+   * Track last swipe action time for debouncing
+   */
+  const lastSwipeRef = useRef<number>(0);
+
+  /**
+   * Track if haptic has been triggered for current swipe gesture
+   */
+  const swipeHapticTriggeredRef = useRef<boolean>(false);
+
+  /**
+   * Ref for the first focusable element (for focus trap)
+   */
+  const firstFocusableRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * Ref to track if navigation is in progress (prevents race conditions)
+   */
+  const navigationInProgressRef = useRef<boolean>(false);
+
+  /**
+   * Previous month for aria-live announcement
+   */
+  const [announcedMonth, setAnnouncedMonth] = useState<string>('');
+
+  // -------------------------------------------------------------------------
+  // Effects
+  // -------------------------------------------------------------------------
+
+  /**
+   * Reset state when modal opens/closes
+   * - Reset to current month when opening
+   * - Clear selection when closing
+   * - Focus first element when opening
+   */
+  useEffect(() => {
+    if (isOpen) {
+      // Reset to current month and clear selection when opening
+      setDisplayedMonth(new Date());
+      setSelectedDate(null);
+      navigationInProgressRef.current = false;
+      swipeHapticTriggeredRef.current = false;
+
+      // Focus first element after animation completes
+      const focusTimer = setTimeout(() => {
+        firstFocusableRef.current?.focus();
+      }, 250);
+
+      return () => clearTimeout(focusTimer);
+    }
+  }, [isOpen]);
+
+  /**
+   * Update announced month for screen readers
+   * Uses aria-live region for month changes
+   */
+  useEffect(() => {
+    if (isOpen) {
+      const newAnnouncement = formatMonthYear(displayedMonth);
+      setAnnouncedMonth(newAnnouncement);
+    }
+  }, [displayedMonth, isOpen]);
+
+  // -------------------------------------------------------------------------
+  // Memoized Values
+  // -------------------------------------------------------------------------
+
   // Memoize options to avoid recalculating on each render
   const quickOptions = useMemo(() => generateQuickOptions(), []);
   const nextWeekOption = useMemo(() => getNextWeekOption(), []);
 
   // Calculate minimum date (default to tomorrow)
   const effectiveMinDate = minDate ?? getTomorrowDate();
+
+  /**
+   * Calendar days for the currently displayed month
+   * Memoized to avoid recalculating on every render
+   */
+  const calendarDays = useMemo(
+    () => getCalendarDays(displayedMonth, effectiveMinDate),
+    [displayedMonth, effectiveMinDate]
+  );
+
+  /**
+   * Formatted month and year string for header display
+   * Example: "Февраль 2026"
+   */
+  const displayedMonthYear = useMemo(
+    () => formatMonthYear(displayedMonth),
+    [displayedMonth]
+  );
+
+  /**
+   * Whether navigation to previous month is allowed
+   */
+  const canGoPrevious = useMemo(
+    () => canNavigateToPreviousMonth(displayedMonth, effectiveMinDate),
+    [displayedMonth, effectiveMinDate]
+  );
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -258,12 +549,187 @@ export function DatePicker({
     event.stopPropagation();
   }, []);
 
+  /**
+   * Handle keyboard navigation for the dialog
+   */
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      switch (event.key) {
+        case KEYBOARD_KEYS.ESCAPE:
+          event.preventDefault();
+          haptic.light();
+          onClose();
+          break;
+        default:
+          break;
+      }
+    },
+    [haptic, onClose]
+  );
+
+  // -------------------------------------------------------------------------
+  // Calendar Handlers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Navigate to previous month with debounce protection
+   */
+  const handlePreviousMonth = useCallback(() => {
+    if (!canGoPrevious || navigationInProgressRef.current) return;
+
+    // Set navigation in progress to prevent rapid clicks
+    navigationInProgressRef.current = true;
+    haptic.light();
+    setDisplayedMonth((prev) => getPreviousMonth(prev));
+
+    // Reset navigation lock after debounce period
+    setTimeout(() => {
+      navigationInProgressRef.current = false;
+    }, MONTH_DEBOUNCE_MS);
+  }, [haptic, canGoPrevious]);
+
+  /**
+   * Navigate to next month with debounce protection
+   */
+  const handleNextMonth = useCallback(() => {
+    if (navigationInProgressRef.current) return;
+
+    // Set navigation in progress to prevent rapid clicks
+    navigationInProgressRef.current = true;
+    haptic.light();
+    setDisplayedMonth((prev) => getNextMonth(prev));
+
+    // Reset navigation lock after debounce period
+    setTimeout(() => {
+      navigationInProgressRef.current = false;
+    }, MONTH_DEBOUNCE_MS);
+  }, [haptic]);
+
+  /**
+   * Handle calendar day selection
+   */
+  const handleDaySelect = useCallback(
+    (day: CalendarDay) => {
+      if (day.isDisabled) return;
+      haptic.selectionChanged();
+      setSelectedDate(day.date);
+    },
+    [haptic]
+  );
+
+  /**
+   * Reset calendar to today's date and clear selection
+   */
+  const handleReset = useCallback(() => {
+    haptic.light();
+    setDisplayedMonth(new Date());
+    setSelectedDate(null);
+  }, [haptic]);
+
+  /**
+   * Confirm the selected date and close the picker
+   */
+  const handleConfirm = useCallback(() => {
+    if (!selectedDate) return;
+    haptic.light();
+    onSelect(format(selectedDate, 'yyyy-MM-dd'));
+  }, [haptic, onSelect, selectedDate]);
+
+  /**
+   * Check if a date is currently selected
+   */
+  const isDateSelected = useCallback(
+    (date: Date): boolean => {
+      if (!selectedDate) return false;
+      return isSameDay(date, selectedDate);
+    },
+    [selectedDate]
+  );
+
+  // -------------------------------------------------------------------------
+  // Swipe Gesture Handlers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle swipe drag on calendar - trigger haptic when threshold is crossed
+   */
+  const handleCalendarDrag = useCallback(
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      const offsetX = info.offset.x;
+      const passedThreshold = Math.abs(offsetX) >= MONTH_SWIPE_THRESHOLD;
+
+      // Trigger haptic once when crossing threshold
+      if (passedThreshold && !swipeHapticTriggeredRef.current) {
+        haptic.light();
+        swipeHapticTriggeredRef.current = true;
+      } else if (!passedThreshold) {
+        swipeHapticTriggeredRef.current = false;
+      }
+    },
+    [haptic]
+  );
+
+  /**
+   * Handle swipe drag end on calendar - navigate to previous/next month
+   * Includes protection against rapid swipes and race conditions
+   */
+  const handleCalendarDragEnd = useCallback(
+    async (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      const offsetX = info.offset.x;
+      const now = Date.now();
+
+      // Reset haptic trigger tracking
+      swipeHapticTriggeredRef.current = false;
+
+      // Check debounce and navigation lock
+      if (
+        now - lastSwipeRef.current < MONTH_DEBOUNCE_MS ||
+        navigationInProgressRef.current
+      ) {
+        await calendarControls.start({ x: 0 }, MONTH_SWIPE_ANIMATION);
+        return;
+      }
+
+      // Swipe left (negative offset) -> next month
+      if (offsetX <= -MONTH_SWIPE_THRESHOLD) {
+        lastSwipeRef.current = now;
+        navigationInProgressRef.current = true;
+        haptic.light();
+        // Animate out to the left
+        await calendarControls.start({ x: -MONTH_MAX_DRAG, opacity: 0 }, MONTH_SWIPE_ANIMATION);
+        setDisplayedMonth((prev) => getNextMonth(prev));
+        // Reset position and animate in
+        calendarX.set(MONTH_MAX_DRAG);
+        await calendarControls.start({ x: 0, opacity: 1 }, MONTH_SWIPE_ANIMATION);
+        navigationInProgressRef.current = false;
+      }
+      // Swipe right (positive offset) -> previous month
+      else if (offsetX >= MONTH_SWIPE_THRESHOLD && canGoPrevious) {
+        lastSwipeRef.current = now;
+        navigationInProgressRef.current = true;
+        haptic.light();
+        // Animate out to the right
+        await calendarControls.start({ x: MONTH_MAX_DRAG, opacity: 0 }, MONTH_SWIPE_ANIMATION);
+        setDisplayedMonth((prev) => getPreviousMonth(prev));
+        // Reset position and animate in
+        calendarX.set(-MONTH_MAX_DRAG);
+        await calendarControls.start({ x: 0, opacity: 1 }, MONTH_SWIPE_ANIMATION);
+        navigationInProgressRef.current = false;
+      }
+      // Did not meet threshold - snap back
+      else {
+        await calendarControls.start({ x: 0 }, MONTH_SWIPE_ANIMATION);
+      }
+    },
+    [haptic, canGoPrevious, calendarControls, calendarX]
+  );
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
           className={`fixed inset-0 z-50 ${className}`}
@@ -271,6 +737,7 @@ export function DatePicker({
           animate="visible"
           exit="hidden"
           data-testid={testId}
+          onKeyDown={handleKeyDown}
         >
           {/* Backdrop */}
           <motion.div
@@ -279,8 +746,11 @@ export function DatePicker({
             className="absolute inset-0"
             style={{
               backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              willChange: 'opacity',
             }}
             onClick={handleBackdropClick}
+            role="button"
+            tabIndex={-1}
             aria-label="Закрыть выбор даты"
           />
 
@@ -295,11 +765,12 @@ export function DatePicker({
               borderTopRightRadius: 'var(--radius-lg)',
               maxHeight: '70vh',
               overflow: 'hidden',
+              willChange: 'transform, opacity',
             }}
             onClick={handleSheetClick}
             role="dialog"
             aria-modal="true"
-            aria-label="Выбор даты"
+            aria-labelledby="datepicker-title"
           >
             {/* Handle indicator */}
             <div
@@ -324,9 +795,31 @@ export function DatePicker({
                 maxHeight: 'calc(70vh - 32px)',
               }}
             >
+              {/* Screen reader announcement for month changes */}
+              <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+                style={{
+                  position: 'absolute',
+                  width: '1px',
+                  height: '1px',
+                  padding: 0,
+                  margin: '-1px',
+                  overflow: 'hidden',
+                  clip: 'rect(0, 0, 0, 0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                {announcedMonth}
+              </div>
+
               {/* Section: Quick options */}
-              <div style={{ marginBottom: 'var(--space-md)' }}>
+              <div style={{ marginBottom: 'var(--space-md)' }} role="region" aria-label="Быстрый выбор даты">
                 <span
+                  id="datepicker-title"
                   style={{
                     fontFamily: 'var(--font-family)',
                     fontSize: 'var(--font-xs)',
@@ -345,9 +838,12 @@ export function DatePicker({
                 <div
                   className="grid grid-cols-3 gap-[var(--space-sm)]"
                   style={{ marginBottom: 'var(--space-sm)' }}
+                  role="group"
+                  aria-label="Быстрые опции"
                 >
                   {/* Tomorrow - highlighted */}
                   <button
+                    ref={firstFocusableRef}
                     type="button"
                     onClick={() => handleSelectOption(quickOptions[0].date)}
                     style={{
@@ -479,9 +975,10 @@ export function DatePicker({
                 }}
               />
 
-              {/* Section: Custom date */}
-              <div>
+              {/* Section: Calendar Grid */}
+              <div role="region" aria-label="Календарь">
                 <span
+                  id="calendar-section-title"
                   style={{
                     fontFamily: 'var(--font-family)',
                     fontSize: 'var(--font-xs)',
@@ -493,28 +990,266 @@ export function DatePicker({
                     marginBottom: 'var(--space-sm)',
                   }}
                 >
-                  Другая дата
+                  Выбрать дату
                 </span>
 
-                <input
-                  type="date"
-                  min={effectiveMinDate}
-                  onChange={handleCustomDateChange}
+                {/* Calendar Header with Month/Year and Navigation */}
+                <div
                   style={{
-                    width: '100%',
-                    fontFamily: 'var(--font-family)',
-                    fontSize: 'var(--font-base)',
-                    fontWeight: 'var(--font-weight-normal)',
-                    color: 'var(--color-text-secondary)',
-                    backgroundColor: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: 'var(--space-sm) var(--space-md)',
-                    cursor: 'pointer',
-                    outline: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 'var(--space-md)',
                   }}
-                  aria-label="Выбрать другую дату"
-                />
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-family)',
+                      fontSize: 'var(--font-base)',
+                      fontWeight: 'var(--font-weight-semibold)',
+                      color: 'var(--color-text-primary)',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {displayedMonthYear}
+                  </span>
+
+                  <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
+                    <button
+                      type="button"
+                      onClick={handlePreviousMonth}
+                      disabled={!canGoPrevious}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--font-family)',
+                        fontSize: 'var(--font-base)',
+                        color: canGoPrevious
+                          ? 'var(--color-text-secondary)'
+                          : 'var(--color-text-disabled)',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: canGoPrevious ? 'pointer' : 'not-allowed',
+                        transition: 'var(--transition-colors)',
+                      }}
+                      aria-label="Предыдущий месяц"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--font-family)',
+                        fontSize: 'var(--font-base)',
+                        color: 'var(--color-text-secondary)',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        transition: 'var(--transition-colors)',
+                      }}
+                      aria-label="Следующий месяц"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+
+                {/* Week Days Header */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(7, 1fr)',
+                    gap: 'var(--space-xs)',
+                    marginBottom: 'var(--space-xs)',
+                  }}
+                  role="row"
+                  aria-label="Дни недели"
+                >
+                  {CALENDAR_DAY_NAMES.map((dayName) => (
+                    <div
+                      key={dayName}
+                      role="columnheader"
+                      aria-label={dayName}
+                      style={{
+                        fontFamily: 'var(--font-family)',
+                        fontSize: 'var(--font-xs)',
+                        fontWeight: 'var(--font-weight-medium)',
+                        color: 'var(--color-text-muted)',
+                        textAlign: 'center',
+                        padding: 'var(--space-xs) 0',
+                      }}
+                    >
+                      {dayName}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Days Grid - Swipeable */}
+                <div
+                  style={{
+                    overflow: 'hidden',
+                    touchAction: 'pan-y',
+                  }}
+                >
+                  <motion.div
+                    style={{
+                      x: calendarX,
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(7, 1fr)',
+                      gap: 'var(--space-xs)',
+                      willChange: 'transform, opacity',
+                    }}
+                    drag="x"
+                    dragConstraints={{
+                      left: -MONTH_MAX_DRAG,
+                      right: canGoPrevious ? MONTH_MAX_DRAG : 0,
+                    }}
+                    dragElastic={0.1}
+                    dragMomentum={false}
+                    onDrag={handleCalendarDrag}
+                    onDragEnd={handleCalendarDragEnd}
+                    animate={calendarControls}
+                    role="grid"
+                    aria-label={`Календарь на ${displayedMonthYear}. Проведите влево для следующего месяца, вправо для предыдущего.`}
+                  >
+                    {calendarDays.map((day) => {
+                      const isSelected = isDateSelected(day.date);
+                      const isCurrentMonth = day.isCurrentMonth;
+                      const isDisabled = day.isDisabled;
+                      const isTodayDate = day.isToday;
+
+                      // Build descriptive label for screen readers
+                      const dayLabel = `${day.day} ${format(day.date, 'MMMM yyyy', { locale: ru })}${
+                        isTodayDate ? ', сегодня' : ''
+                      }${isSelected ? ', выбрано' : ''}${
+                        isDisabled ? ', недоступно' : ''
+                      }`;
+
+                      return (
+                        <button
+                          key={day.dateStr}
+                          type="button"
+                          role="gridcell"
+                          onClick={() => handleDaySelect(day)}
+                          disabled={isDisabled}
+                          tabIndex={isDisabled ? -1 : 0}
+                          style={{
+                            width: '100%',
+                            aspectRatio: '1',
+                            minHeight: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontFamily: 'var(--font-family)',
+                            fontSize: 'var(--font-sm)',
+                            fontWeight: isSelected
+                              ? 'var(--font-weight-semibold)'
+                              : 'var(--font-weight-normal)',
+                            color: isSelected
+                              ? 'var(--color-calendar-selection-text)'
+                              : isDisabled
+                              ? 'var(--color-text-disabled)'
+                              : isCurrentMonth
+                              ? 'var(--color-text-primary)'
+                              : 'var(--color-text-muted)',
+                            backgroundColor: isSelected
+                              ? 'var(--color-calendar-selection)'
+                              : 'transparent',
+                            border: isTodayDate && !isSelected
+                              ? '1px solid var(--color-border)'
+                              : 'none',
+                            borderRadius: 'var(--radius-full)',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            transition: 'var(--transition-colors)',
+                          }}
+                          aria-label={dayLabel}
+                          aria-selected={isSelected}
+                          aria-disabled={isDisabled}
+                          aria-current={isTodayDate ? 'date' : undefined}
+                        >
+                          {day.day}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                </div>
+
+                {/* Calendar Footer with Reset and Confirm */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 'var(--space-md)',
+                    paddingTop: 'var(--space-md)',
+                    borderTop: '1px solid var(--color-border-thin)',
+                  }}
+                  role="group"
+                  aria-label="Действия с календарём"
+                >
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    style={{
+                      fontFamily: 'var(--font-family)',
+                      fontSize: 'var(--font-sm)',
+                      fontWeight: 'var(--font-weight-medium)',
+                      color: 'var(--color-text-secondary)',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      padding: 'var(--space-sm) var(--space-md)',
+                      cursor: 'pointer',
+                      transition: 'var(--transition-colors)',
+                    }}
+                    aria-label="Сбросить выбор и вернуться к текущему месяцу"
+                  >
+                    Сброс
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={!selectedDate}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'var(--font-family)',
+                      fontSize: 'var(--font-lg)',
+                      color: selectedDate
+                        ? 'var(--color-calendar-selection-text)'
+                        : 'var(--color-text-disabled)',
+                      backgroundColor: selectedDate
+                        ? 'var(--color-calendar-selection)'
+                        : 'var(--color-border)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-full)',
+                      cursor: selectedDate ? 'pointer' : 'not-allowed',
+                      transition: 'var(--transition-colors)',
+                    }}
+                    aria-label={
+                      selectedDate
+                        ? `Подтвердить выбор: ${format(selectedDate, 'd MMMM yyyy', { locale: ru })}`
+                        : 'Подтвердить выбор (сначала выберите дату)'
+                    }
+                    aria-disabled={!selectedDate}
+                  >
+                    ✓
+                  </button>
+                </div>
               </div>
 
               {/* Cancel button */}
@@ -550,4 +1285,14 @@ export function DatePicker({
 // Exports
 // =============================================================================
 
-export type { DatePickerProps, DateOption };
+export type { DatePickerProps, DateOption, CalendarDay };
+
+// Export calendar helpers for potential reuse
+export {
+  getCalendarDays,
+  getPreviousMonth,
+  getNextMonth,
+  formatMonthYear,
+  canNavigateToPreviousMonth,
+  CALENDAR_DAY_NAMES,
+};
