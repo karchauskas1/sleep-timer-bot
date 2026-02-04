@@ -9,7 +9,9 @@
  * - Safe-area padding for iOS devices (home indicator)
  * - Icons with labels for each tab
  * - Haptic feedback on tab change
- * - Active state with accent color
+ * - Active state with accent color and scale animation
+ * - Premium glass effect with enhanced backdrop blur
+ * - Clearly visible active indicator with subtle glow
  * - Persists last selected module to localStorage
  *
  * @example
@@ -26,7 +28,7 @@
  * );
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { ModuleId } from '@/types';
 import { useHaptic } from '@/shared/hooks/useHaptic';
@@ -44,6 +46,35 @@ const indicatorVariants = {
   sleep: { x: '100%' },
   timer: { x: '200%' },
   settings: { x: '300%' },
+};
+
+/**
+ * Icon animation variants for active/inactive states
+ * Active icons scale up slightly for better visibility
+ */
+const iconVariants = {
+  inactive: {
+    scale: 1,
+    opacity: 0.7,
+  },
+  active: {
+    scale: 1.1,
+    opacity: 1,
+  },
+};
+
+/**
+ * Label animation variants for active/inactive states
+ */
+const labelVariants = {
+  inactive: {
+    opacity: 0.7,
+    y: 0,
+  },
+  active: {
+    opacity: 1,
+    y: 0,
+  },
 };
 
 // =============================================================================
@@ -260,6 +291,30 @@ export function BottomNavigation({
     [currentModule, haptic, onModuleChange]
   );
 
+  // Animation transition configuration
+  const springTransition = useMemo(
+    () =>
+      prefersReducedMotion
+        ? { duration: 0 }
+        : {
+            type: 'spring',
+            stiffness: 400,
+            damping: 30,
+          },
+    [prefersReducedMotion]
+  );
+
+  const colorTransition = useMemo(
+    () =>
+      prefersReducedMotion
+        ? { duration: 0 }
+        : {
+            duration: 0.2,
+            ease: [0.16, 1, 0.3, 1],
+          },
+    [prefersReducedMotion]
+  );
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 flex items-center justify-around"
@@ -267,36 +322,31 @@ export function BottomNavigation({
         height: `calc(var(--height-bottom-nav) + env(safe-area-inset-bottom, 34px) + 20px)`,
         paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 20px)',
         backgroundColor: 'var(--glass-bg)',
-        backdropFilter: 'var(--glass-blur)',
-        WebkitBackdropFilter: 'var(--glass-blur)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         borderTop: '1px solid var(--glass-border)',
         zIndex: 'var(--z-fixed)',
+        boxShadow: '0 -1px 12px rgba(0, 0, 0, 0.04)',
       }}
       role="tablist"
       aria-label="Module navigation"
     >
-      {/* Sliding indicator */}
+      {/* Sliding indicator - enhanced visibility with glow effect */}
       <motion.div
-        className="absolute rounded-lg"
+        className="absolute"
         style={{
-          width: '25%',
-          height: 'calc(100% - env(safe-area-inset-bottom, 34px) - 20px - 8px)',
-          top: 4,
-          left: 0,
+          width: 'calc(25% - 8px)',
+          height: 'calc(100% - env(safe-area-inset-bottom, 34px) - 20px - 12px)',
+          top: 6,
+          left: 4,
           backgroundColor: 'var(--nav-indicator-bg)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
         }}
         variants={indicatorVariants}
         animate={currentModule}
-        transition={
-          prefersReducedMotion
-            ? { duration: 0 }
-            : {
-                type: 'spring',
-                stiffness: 400,
-                damping: 30,
-              }
-        }
+        transition={springTransition}
       />
       {TABS.map((tab) => {
         const isActive = tab.id === currentModule;
@@ -309,26 +359,52 @@ export function BottomNavigation({
             role="tab"
             aria-selected={isActive}
             aria-controls={`panel-${tab.id}`}
-            className="relative z-10 flex flex-col items-center justify-center gap-[var(--space-0-5)] flex-1"
+            className="relative z-10 flex flex-col items-center justify-center flex-1"
             style={{
               fontFamily: 'var(--font-family)',
-              fontSize: 'var(--font-2xs)',
-              fontWeight: isActive
-                ? 'var(--font-weight-semibold)'
-                : 'var(--font-weight-normal)',
-              color: isActive
-                ? 'var(--color-accent)'
-                : 'var(--color-text-muted)',
+              background: 'transparent',
               border: 'none',
               cursor: 'pointer',
               minHeight: 'var(--min-touch-target)',
               paddingTop: 'var(--space-sm)',
               paddingBottom: 'var(--space-xs)',
-              transition: 'var(--transition-colors)',
+              gap: 'var(--space-xs)',
             }}
           >
-            <Icon active={isActive} />
-            <span>{tab.label}</span>
+            {/* Animated icon wrapper */}
+            <motion.div
+              variants={iconVariants}
+              animate={isActive ? 'active' : 'inactive'}
+              transition={colorTransition}
+              style={{
+                color: isActive
+                  ? 'var(--color-accent)'
+                  : 'var(--color-text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon active={isActive} />
+            </motion.div>
+            {/* Animated label */}
+            <motion.span
+              variants={labelVariants}
+              animate={isActive ? 'active' : 'inactive'}
+              transition={colorTransition}
+              style={{
+                fontSize: 'var(--font-2xs)',
+                fontWeight: isActive
+                  ? 'var(--font-weight-semibold)'
+                  : 'var(--font-weight-normal)',
+                color: isActive
+                  ? 'var(--color-accent)'
+                  : 'var(--color-text-muted)',
+                letterSpacing: isActive ? '0.01em' : '0',
+              }}
+            >
+              {tab.label}
+            </motion.span>
           </button>
         );
       })}

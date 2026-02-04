@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "007-",
+  "spec": "013-",
   "state": "building",
   "subtasks": {
-    "completed": 4,
-    "total": 9,
+    "completed": 3,
+    "total": 7,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "BottomNavigation Component Redesign",
+    "current": "Sleep Module Layout Polish",
     "id": null,
-    "total": 5
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 5,
-    "started_at": "2026-02-03T13:32:47.941260"
+    "number": 3,
+    "started_at": "2026-02-04T03:09:43.078271"
   },
-  "last_update": "2026-02-03T13:37:48.585077"
+  "last_update": "2026-02-04T03:13:18.132033"
 }

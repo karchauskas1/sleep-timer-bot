@@ -45,3 +45,253 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ========================
+   ACCESSIBILITY UTILITIES
+   ======================== */
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Focus visible only (keyboard navigation) */
+.focus-visible-only:focus {
+  outline: none;
+}
+
+.focus-visible-only:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ========================
+   TEXT UTILITIES
+   ======================== */
+
+/* Tabular numbers for time/date displays */
+.text-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tight letter spacing for large numbers */
+.text-display {
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+}
+
+/* Secondary text styling */
+.text-secondary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+/* Muted text styling */
+.text-muted {
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+}
+
+/* ========================
+   LAYOUT UTILITIES
+   ======================== */
+
+/* Safe area padding for iOS devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Full safe area padding */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+/* Smooth scrolling for lists */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========================
+   INTERACTIVE UTILITIES
+   ======================== */
+
+/* Touch-friendly tap target */
+.touch-target {
+  min-height: var(--min-touch-target);
+  min-width: var(--min-touch-target);
+}
+
+/* Button reset for custom buttons */
+.btn-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.btn-reset:focus {
+  outline: none;
+}
+
+/* Card base styling */
+.card-base {
+  background-color: var(--color-surface-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-thin);
+  box-shadow: var(--shadow-card);
+}
+
+/* Interactive card with hover/focus states */
+.card-interactive {
+  background-color: var(--color-surface-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-thin);
+  box-shadow: var(--shadow-card);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.card-interactive:hover {
+  background-color: var(--color-surface-hover);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border);
+}
+
+.card-interactive:focus {
+  background-color: var(--color-surface-hover);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-focus);
+  outline: none;
+}
+
+/* ========================
+   ANIMATION UTILITIES
+   ======================== */
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn var(--duration-base) var(--ease-out);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide up animation */
+.slide-up {
+  animation: slideUp var(--duration-base) var(--ease-out);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================
+   GLASS EFFECT UTILITIES
+   ======================== */
+
+/* iOS-style glassmorphism surface */
+.glass-surface {
+  background-color: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Enhanced glass effect with saturation */
+.glass-surface-enhanced {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+}
+
+/* ========================
+   LABEL UTILITIES
+   ======================== */
+
+/* Uppercase label styling for section headers */
+.label-uppercase {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+/* Small uppercase label for subtle headers */
+.label-uppercase-sm {
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+}
+
+/* ========================
+   TIME DISPLAY UTILITIES
+   ======================== */
+
+/* Large timer display styling */
+.time-display {
+  font-size: var(--font-timer);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-none);
+}
+
+/* Medium time display */
+.time-display-md {
+  font-size: var(--font-xl);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+}
+
+/* ========================
+   STATE UTILITIES
+   ======================== */
+
+/* Disabled state overlay */
+.state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Loading state */
+.state-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}

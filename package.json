@@ -13,6 +13,7 @@
     "build:analyze": "npm run build && du -sh dist/ && ls -lh dist/assets/*.js"
   },
   "dependencies": {
+    "@ncdai/react-wheel-picker": "^1.1.0",
     "@twa-dev/sdk": "^7.10.1",
     "date-fns": "^3.6.0",
     "dexie": "^4.0.8",

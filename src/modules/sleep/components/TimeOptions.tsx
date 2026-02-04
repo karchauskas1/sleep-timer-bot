@@ -140,16 +140,53 @@ const TimeOptionItem = memo(function TimeOptionItem({
   return (
     <motion.div
       variants={itemVariants}
+      whileHover={isClickable ? { scale: 1.01 } : undefined}
+      whileTap={isClickable ? { scale: 0.98 } : undefined}
       className={`
         flex items-center justify-between
-        py-3 px-4
-        rounded-lg
-        ${isClickable ? 'cursor-pointer active:bg-[var(--color-surface-active)]' : ''}
-        transition-colors
+        ${isClickable ? 'cursor-pointer' : ''}
       `}
       style={{
-        backgroundColor: 'var(--color-surface)',
-        transition: 'background-color var(--duration-fast) var(--ease-out)',
+        padding: 'var(--space-card-y) var(--space-card-x)',
+        backgroundColor: 'var(--color-surface-card)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--color-border-thin)',
+        boxShadow: 'var(--shadow-card)',
+        transition: `
+          background-color var(--duration-fast) var(--ease-out),
+          box-shadow var(--duration-base) var(--ease-out),
+          transform var(--duration-fast) var(--ease-out),
+          border-color var(--duration-fast) var(--ease-out)
+        `,
+      }}
+      onMouseEnter={(e) => {
+        if (isClickable) {
+          e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)';
+          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+          e.currentTarget.style.borderColor = 'var(--color-border)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (isClickable) {
+          e.currentTarget.style.backgroundColor = 'var(--color-surface-card)';
+          e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+          e.currentTarget.style.borderColor = 'var(--color-border-thin)';
+        }
+      }}
+      onFocus={(e) => {
+        if (isClickable) {
+          e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)';
+          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+          e.currentTarget.style.borderColor = 'var(--color-border-focus)';
+          e.currentTarget.style.outline = 'none';
+        }
+      }}
+      onBlur={(e) => {
+        if (isClickable) {
+          e.currentTarget.style.backgroundColor = 'var(--color-surface-card)';
+          e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+          e.currentTarget.style.borderColor = 'var(--color-border-thin)';
+        }
       }}
       onClick={isClickable ? handleClick : undefined}
       onKeyDown={isClickable ? handleKeyDown : undefined}
@@ -271,7 +308,8 @@ export function TimeOptions({
           initial="hidden"
           animate="visible"
           exit="hidden"
-          className="flex flex-col gap-2"
+          className="flex flex-col"
+          style={{ gap: 'var(--space-list-gap)' }}
           role="list"
           aria-label={heading}
         >

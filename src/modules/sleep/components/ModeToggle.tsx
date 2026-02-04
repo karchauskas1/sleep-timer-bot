@@ -106,11 +106,13 @@ const ModeButton = memo(function ModeButton({
         fontWeight: isSelected ? 600 : 400,
         color: isSelected
           ? 'var(--color-text-primary)'
-          : 'var(--color-text-secondary)',
+          : 'var(--color-text-tertiary, var(--color-text-secondary))',
+        opacity: isSelected ? 1 : 0.65,
         lineHeight: 'var(--line-height-normal)',
         letterSpacing: 'var(--letter-spacing-normal)',
-        transitionDuration: 'var(--duration-fast)',
+        transitionDuration: 'var(--duration-base)',
         transitionTimingFunction: 'var(--ease-out)',
+        transitionProperty: 'color, opacity, font-weight',
       }}
     >
       {label}
@@ -197,14 +199,19 @@ export const ModeToggle = memo(function ModeToggle({
             width: 'calc(50% - 4px)',
             left: 4,
             backgroundColor: 'var(--color-bg)',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+            boxShadow: `
+              0 1px 3px rgba(0, 0, 0, 0.08),
+              0 2px 6px rgba(0, 0, 0, 0.06),
+              0 0 0 1px rgba(0, 0, 0, 0.04)
+            `,
           }}
           variants={indicatorVariants}
           animate={mode}
           transition={{
             type: 'spring',
-            stiffness: 400,
-            damping: 30,
+            stiffness: 380,
+            damping: 28,
+            mass: 0.8,
           }}
         />
 

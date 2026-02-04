@@ -227,15 +227,15 @@ export function Sleep({ className = '' }: SleepProps) {
         className="flex-1 flex flex-col items-center justify-center"
         style={{
           padding: 'var(--space-lg)',
-          paddingTop: 'var(--space-xl)',
-          paddingBottom: 'var(--space-2xl)',
+          paddingTop: 'var(--space-2xl)',
+          paddingBottom: 'var(--space-3xl)',
         }}
       >
         {/* Mode Toggle */}
         <div
-          className="w-full max-w-xs mb-8"
+          className="w-full max-w-xs"
           style={{
-            marginBottom: 'var(--space-2xl)',
+            marginBottom: 'var(--space-3xl)',
           }}
         >
           <ModeToggle
@@ -255,7 +255,7 @@ export function Sleep({ className = '' }: SleepProps) {
               exit="exit"
               className="w-full flex justify-center"
               style={{
-                marginBottom: 'var(--space-2xl)',
+                marginBottom: 'var(--space-3xl)',
               }}
             >
               <TimeInput
@@ -278,24 +278,29 @@ export function Sleep({ className = '' }: SleepProps) {
               transition={ANIMATION_CONFIG}
               className="text-center"
               style={{
-                marginBottom: 'var(--space-2xl)',
+                marginBottom: 'var(--space-3xl)',
               }}
             >
               <p
                 style={{
                   fontSize: 'var(--font-sm)',
-                  color: 'var(--color-text-muted)',
-                  marginBottom: 'var(--space-xs)',
+                  color: 'var(--color-text-secondary)',
+                  marginBottom: 'var(--space-sm)',
+                  fontWeight: 'var(--font-weight-medium)',
+                  letterSpacing: 'var(--letter-spacing-wide)',
+                  textTransform: 'uppercase',
                 }}
               >
                 Если лечь сейчас
               </p>
               <p
-                className="tabular-nums font-semibold"
+                className="tabular-nums"
                 style={{
-                  fontSize: 'var(--font-2xl)',
+                  fontSize: 'var(--font-timer)',
+                  fontWeight: 'var(--font-weight-semibold)',
                   color: 'var(--color-text-primary)',
                   letterSpacing: 'var(--letter-spacing-tight)',
+                  lineHeight: 'var(--line-height-none)',
                 }}
               >
                 {currentTime.toLocaleTimeString('ru-RU', {
