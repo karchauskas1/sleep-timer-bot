@@ -3,7 +3,7 @@
  *
  * Provides a clean, minimal interface for creating new tasks:
  * - Single text field with "Новая" placeholder
- * - Enter to add task (defaults to today's date)
+ * - Enter to add task for the currently selected date from store
  * - Optional date expansion for selecting different dates
  * - Haptic feedback on task creation
  *
@@ -13,7 +13,7 @@
  * - Calm surface - no prompts or encouragement
  *
  * @example
- * // Basic usage - adds tasks to today
+ * // Basic usage - adds tasks to currently selected date in store
  * <TaskInput />
  *
  * @example
@@ -65,8 +65,6 @@ interface TaskInputProps {
   showDatePicker?: boolean;
   /** Optional callback when a task is added */
   onTaskAdded?: (task: Task) => void;
-  /** Default date for new tasks (defaults to today) */
-  defaultDate?: string;
   /** Additional CSS class name */
   className?: string;
   /** Test ID for testing purposes */
@@ -109,16 +107,16 @@ function getTodayDate(): string {
 export function TaskInput({
   showDatePicker = false,
   onTaskAdded,
-  defaultDate,
   className = '',
   testId,
 }: TaskInputProps) {
   const haptic = useHaptic();
   const addTask = usePlannerStore((state) => state.addTask);
+  const selectedDate = usePlannerStore((state) => state.selectedDate);
+  const setSelectedDate = usePlannerStore((state) => state.setSelectedDate);
 
   // Local state
   const [text, setText] = useState('');
-  const [selectedDate, setSelectedDate] = useState(defaultDate ?? getTodayDate());
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Refs
@@ -138,7 +136,7 @@ export function TaskInput({
       const trimmedText = text.trim();
       if (!trimmedText) return;
 
-      // Add the task
+      // Add the task for the currently selected date from store
       const newTask = addTask({
         text: trimmedText,
         date: selectedDate,
@@ -150,11 +148,6 @@ export function TaskInput({
       // Clear input
       setText('');
 
-      // Reset date to today if using date picker
-      if (showDatePicker) {
-        setSelectedDate(getTodayDate());
-      }
-
       // Close date picker if open
       setIsDatePickerOpen(false);
 
@@ -164,7 +157,7 @@ export function TaskInput({
       // Keep focus on input for quick entry
       inputRef.current?.focus();
     },
-    [text, selectedDate, addTask, haptic, showDatePicker, onTaskAdded]
+    [text, selectedDate, addTask, haptic, onTaskAdded]
   );
 
   /**
@@ -203,7 +196,7 @@ export function TaskInput({
       haptic.light();
       inputRef.current?.focus();
     },
-    [haptic]
+    [haptic, setSelectedDate]
   );
 
   /**
@@ -217,7 +210,7 @@ export function TaskInput({
         haptic.selectionChanged();
       }
     },
-    [haptic]
+    [haptic, setSelectedDate]
   );
 
   // -------------------------------------------------------------------------

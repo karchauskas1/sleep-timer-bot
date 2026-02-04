@@ -10,6 +10,7 @@
  * - Date-based grouping with Russian labels
  * - Empty state when no tasks exist
  * - Overdue tasks highlighted (optional)
+ * - Single day mode for horizontal day navigation
  *
  * @example
  * // Basic usage - displays all tasks with grouping
@@ -22,19 +23,24 @@
  * @example
  * // Show only today's tasks
  * <TaskList showUpcoming={false} />
+ *
+ * @example
+ * // Single day mode - shows tasks for selectedDate from store
+ * <TaskList singleDayMode />
  */
 
 import { useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Task } from '@/types';
 import { TaskItem } from '@/modules/planner/components/TaskItem';
 import { EmptyState } from '@/shared/components/EmptyState';
 import {
   useTodaysTasks,
   useUpcomingTasksGrouped,
   useOverdueTasksGrouped,
+  useTasksByDate,
   type TaskGroup,
 } from '@/modules/planner/hooks/useTasks';
+import { usePlannerStore } from '@/modules/planner/store/plannerStore';
 
 // =============================================================================
 // Constants
@@ -82,6 +88,13 @@ interface TaskListProps {
   showOverdue?: boolean;
   /** Additional CSS class name */
   className?: string;
+  /**
+   * Single day mode - displays only tasks for the selected date from store
+   * When enabled, ignores showUpcoming/showOverdue and shows a flat list
+   * without section headers
+   * @default false
+   */
+  singleDayMode?: boolean;
 }
 
 // =============================================================================
@@ -184,13 +197,18 @@ export function TaskList({
   showUpcoming = true,
   showOverdue = true,
   className = '',
+  singleDayMode = false,
 }: TaskListProps) {
+  // Get selected date from store (used in singleDayMode)
+  const selectedDate = usePlannerStore((state) => state.selectedDate);
+
   // Fetch tasks from IndexedDB
   const todaysTasks = useTodaysTasks();
   const upcomingGroups = useUpcomingTasksGrouped();
   const overdueGroups = useOverdueTasksGrouped();
+  const selectedDateTasks = useTasksByDate(selectedDate);
 
-  // Separate today's tasks into incomplete and completed
+  // Separate today's tasks into incomplete and completed (for default mode)
   const { incompleteTasks, completedTasks } = useMemo(() => {
     if (!todaysTasks) return { incompleteTasks: [], completedTasks: [] };
     return {
@@ -198,6 +216,94 @@ export function TaskList({
       completedTasks: todaysTasks.filter((t) => t.completed),
     };
   }, [todaysTasks]);
+
+  // Separate selected date tasks into incomplete and completed (for single day mode)
+  const { singleDayIncompleteTasks, singleDayCompletedTasks } = useMemo(() => {
+    if (!selectedDateTasks) return { singleDayIncompleteTasks: [], singleDayCompletedTasks: [] };
+    return {
+      singleDayIncompleteTasks: selectedDateTasks.filter((t) => !t.completed),
+      singleDayCompletedTasks: selectedDateTasks.filter((t) => t.completed),
+    };
+  }, [selectedDateTasks]);
+
+  // Handle postpone callback wrapper
+  const handlePostpone = useCallback(
+    (taskId: string) => {
+      if (onPostpone) {
+        onPostpone(taskId);
+      }
+    },
+    [onPostpone]
+  );
+
+  // ==========================================================================
+  // Single Day Mode Rendering
+  // ==========================================================================
+  if (singleDayMode) {
+    // Loading state for single day mode
+    if (selectedDateTasks === undefined) {
+      return null;
+    }
+
+    // Empty state for single day mode
+    if (selectedDateTasks.length === 0) {
+      return (
+        <div className={className}>
+          <EmptyState fullHeight />
+        </div>
+      );
+    }
+
+    // Render flat task list without section headers
+    return (
+      <div
+        className={className}
+        style={{
+          paddingBottom: 'var(--space-2xl)',
+        }}
+      >
+        {/* Incomplete tasks first */}
+        <AnimatePresence mode="popLayout">
+          {singleDayIncompleteTasks.map((task) => (
+            <motion.div
+              key={task.id}
+              variants={taskVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={ANIMATION_CONFIG}
+              layout
+            >
+              <TaskItem task={task} onPostpone={handlePostpone} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* Completed tasks at the bottom */}
+        {singleDayCompletedTasks.length > 0 && (
+          <AnimatePresence mode="popLayout">
+            {singleDayCompletedTasks.map((task) => (
+              <motion.div
+                key={task.id}
+                variants={taskVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={ANIMATION_CONFIG}
+                layout
+              >
+                <TaskItem task={task} onPostpone={handlePostpone} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
+      </div>
+    );
+  }
+
+  // ==========================================================================
+  // Default Mode Rendering (grouped by date)
+  // ==========================================================================
 
   // Check if data is still loading
   const isLoading = todaysTasks === undefined ||
@@ -214,16 +320,6 @@ export function TaskList({
 
     return hasTodayTasks || hasUpcoming || hasOverdue;
   }, [isLoading, todaysTasks, upcomingGroups, overdueGroups, showUpcoming, showOverdue]);
-
-  // Handle postpone callback wrapper
-  const handlePostpone = useCallback(
-    (taskId: string) => {
-      if (onPostpone) {
-        onPostpone(taskId);
-      }
-    },
-    [onPostpone]
-  );
 
   // Loading state - render nothing (app should feel instant per design philosophy)
   if (isLoading) {
@@ -295,7 +391,7 @@ export function TaskList({
                   exit="exit"
                   transition={ANIMATION_CONFIG}
                   layout
-                >
+              >
                   <TaskItem task={task} onPostpone={handlePostpone} />
                 </motion.div>
               ))}
