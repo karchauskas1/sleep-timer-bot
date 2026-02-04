@@ -710,7 +710,7 @@ export function DatePicker({
                 }}
               />
 
-              {/* Section: Custom date */}
+              {/* Section: Calendar Grid */}
               <div>
                 <span
                   style={{
@@ -724,28 +724,224 @@ export function DatePicker({
                     marginBottom: 'var(--space-sm)',
                   }}
                 >
-                  Другая дата
+                  Выбрать дату
                 </span>
 
-                <input
-                  type="date"
-                  min={effectiveMinDate}
-                  onChange={handleCustomDateChange}
+                {/* Calendar Header with Month/Year and Navigation */}
+                <div
                   style={{
-                    width: '100%',
-                    fontFamily: 'var(--font-family)',
-                    fontSize: 'var(--font-base)',
-                    fontWeight: 'var(--font-weight-normal)',
-                    color: 'var(--color-text-secondary)',
-                    backgroundColor: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: 'var(--space-sm) var(--space-md)',
-                    cursor: 'pointer',
-                    outline: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 'var(--space-md)',
                   }}
-                  aria-label="Выбрать другую дату"
-                />
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-family)',
+                      fontSize: 'var(--font-base)',
+                      fontWeight: 'var(--font-weight-semibold)',
+                      color: 'var(--color-text-primary)',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {displayedMonthYear}
+                  </span>
+
+                  <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
+                    <button
+                      type="button"
+                      onClick={handlePreviousMonth}
+                      disabled={!canGoPrevious}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--font-family)',
+                        fontSize: 'var(--font-base)',
+                        color: canGoPrevious
+                          ? 'var(--color-text-secondary)'
+                          : 'var(--color-text-disabled)',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: canGoPrevious ? 'pointer' : 'not-allowed',
+                        transition: 'var(--transition-colors)',
+                      }}
+                      aria-label="Предыдущий месяц"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--font-family)',
+                        fontSize: 'var(--font-base)',
+                        color: 'var(--color-text-secondary)',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        transition: 'var(--transition-colors)',
+                      }}
+                      aria-label="Следующий месяц"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+
+                {/* Week Days Header */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(7, 1fr)',
+                    gap: 'var(--space-xs)',
+                    marginBottom: 'var(--space-xs)',
+                  }}
+                >
+                  {CALENDAR_DAY_NAMES.map((dayName) => (
+                    <div
+                      key={dayName}
+                      style={{
+                        fontFamily: 'var(--font-family)',
+                        fontSize: 'var(--font-xs)',
+                        fontWeight: 'var(--font-weight-medium)',
+                        color: 'var(--color-text-muted)',
+                        textAlign: 'center',
+                        padding: 'var(--space-xs) 0',
+                      }}
+                    >
+                      {dayName}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Days Grid */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(7, 1fr)',
+                    gap: 'var(--space-xs)',
+                  }}
+                >
+                  {calendarDays.map((day) => {
+                    const isSelected = isDateSelected(day.date);
+                    const isCurrentMonth = day.isCurrentMonth;
+                    const isDisabled = day.isDisabled;
+                    const isTodayDate = day.isToday;
+
+                    return (
+                      <button
+                        key={day.dateStr}
+                        type="button"
+                        onClick={() => handleDaySelect(day)}
+                        disabled={isDisabled}
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                          minHeight: '36px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontFamily: 'var(--font-family)',
+                          fontSize: 'var(--font-sm)',
+                          fontWeight: isSelected
+                            ? 'var(--font-weight-semibold)'
+                            : 'var(--font-weight-normal)',
+                          color: isSelected
+                            ? 'var(--color-text-inverse)'
+                            : isDisabled
+                            ? 'var(--color-text-disabled)'
+                            : isCurrentMonth
+                            ? 'var(--color-text-primary)'
+                            : 'var(--color-text-muted)',
+                          backgroundColor: isSelected
+                            ? 'var(--color-accent)'
+                            : 'transparent',
+                          border: isTodayDate && !isSelected
+                            ? '1px solid var(--color-border)'
+                            : 'none',
+                          borderRadius: 'var(--radius-full)',
+                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          transition: 'var(--transition-colors)',
+                        }}
+                        aria-label={`${day.day} ${displayedMonthYear}`}
+                        aria-pressed={isSelected}
+                        aria-disabled={isDisabled}
+                      >
+                        {day.day}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Calendar Footer with Reset and Confirm */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 'var(--space-md)',
+                    paddingTop: 'var(--space-md)',
+                    borderTop: '1px solid var(--color-border-thin)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    style={{
+                      fontFamily: 'var(--font-family)',
+                      fontSize: 'var(--font-sm)',
+                      fontWeight: 'var(--font-weight-medium)',
+                      color: 'var(--color-text-secondary)',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      padding: 'var(--space-sm) var(--space-md)',
+                      cursor: 'pointer',
+                      transition: 'var(--transition-colors)',
+                    }}
+                    aria-label="Сбросить выбор"
+                  >
+                    Сброс
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={!selectedDate}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'var(--font-family)',
+                      fontSize: 'var(--font-lg)',
+                      color: selectedDate
+                        ? 'var(--color-text-inverse)'
+                        : 'var(--color-text-disabled)',
+                      backgroundColor: selectedDate
+                        ? 'var(--color-accent)'
+                        : 'var(--color-border)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-full)',
+                      cursor: selectedDate ? 'pointer' : 'not-allowed',
+                      transition: 'var(--transition-colors)',
+                    }}
+                    aria-label="Подтвердить выбор"
+                  >
+                    ✓
+                  </button>
+                </div>
               </div>
 
               {/* Cancel button */}
