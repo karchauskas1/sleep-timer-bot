@@ -98,8 +98,9 @@ export type SoundType = 'chime' | 'bell' | 'tone' | 'none';
 
 /**
  * Module identifiers for navigation
+ * Note: 'home' is the new central hub, 'settings' will be accessible from home (not global nav)
  */
-export type ModuleId = 'planner' | 'sleep' | 'timer' | 'settings';
+export type ModuleId = 'home' | 'planner' | 'sleep' | 'timer' | 'settings';
 
 /**
  * Theme options

@@ -2,8 +2,8 @@
  * Timer Module - Main entry point for timer functionality
  *
  * Integrates all timer components into a cohesive experience:
- * - WheelTimePicker for iOS-style wheel duration selection
- * - TimerHistory for quick restart from recent durations
+ * - TimerPresets for quick 5, 10, 25 minute timers
+ * - CustomTimeInput for entering custom durations
  * - TimerDisplay showing countdown when active
  *
  * Design principles:
@@ -13,7 +13,7 @@
  * - Large, glanceable display when running
  *
  * States:
- * - idle: Shows wheel picker and history (timer not started)
+ * - idle: Shows presets and custom input (timer not started)
  * - active: Shows countdown display with stop button
  *
  * @example
@@ -26,8 +26,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTimer } from '@/modules/timer/hooks/useTimer';
 import { useTimerHistory } from '@/modules/timer/hooks/useTimerHistory';
 import { TimerDisplay } from '@/modules/timer/components/TimerDisplay';
+import { TimerPresets } from '@/modules/timer/components/TimerPresets';
 import { TimerHistory } from '@/modules/timer/components/TimerHistory';
-import { WheelTimePicker } from '@/modules/timer/components/WheelTimePicker';
+import { CustomTimeInput } from '@/modules/timer/components/CustomTimeInput';
+import { BackButton } from '@/shared/components/BackButton';
 
 // =============================================================================
 // Constants
@@ -113,6 +115,8 @@ const sectionVariants = {
 interface TimerProps {
   /** Additional CSS class name */
   className?: string;
+  /** Callback to navigate back to home screen */
+  onBack?: () => void;
 }
 
 // =============================================================================
@@ -126,8 +130,8 @@ interface TimerProps {
  * Manages timer state and switches between idle and active views.
  *
  * Features:
- * - iOS-style wheel picker for hours, minutes, seconds
- * - Recent timer history for quick restart
+ * - Quick preset buttons (5, 10, 25 minutes)
+ * - Custom time input with stepper
  * - Large countdown display when running
  * - Pause/resume and stop controls
  * - Haptic feedback on interactions
@@ -135,7 +139,7 @@ interface TimerProps {
  *
  * @param props - Component props
  */
-export function Timer({ className = '' }: TimerProps) {
+export function Timer({ className = '', onBack }: TimerProps) {
   // -------------------------------------------------------------------------
   // Timer Hook
   // -------------------------------------------------------------------------
@@ -180,6 +184,20 @@ export function Timer({ className = '' }: TimerProps) {
         backgroundColor: 'var(--color-bg)',
       }}
     >
+      {/* Header with Back Button */}
+      {onBack && (
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: 'var(--space-sm) var(--space-md)',
+            paddingTop: 'calc(var(--space-sm) + var(--safe-area-top))',
+          }}
+        >
+          <BackButton onBack={onBack} />
+        </header>
+      )}
+
       {/* Content container with vertical centering */}
       <div
         className="flex-1 flex flex-col items-center justify-center"
@@ -192,7 +210,7 @@ export function Timer({ className = '' }: TimerProps) {
         <AnimatePresence mode="wait">
           {timer.isIdle ? (
             // =================================================================
-            // Idle State: Show wheel picker and history
+            // Idle State: Show presets and custom input
             // =================================================================
             <motion.div
               key="idle-state"
@@ -213,12 +231,65 @@ export function Timer({ className = '' }: TimerProps) {
                 <TimerHistory onSelect={handleStart} />
               </motion.div>
 
-              {/* Wheel Time Picker Section */}
+              {/* Presets Section */}
+              <motion.div
+                variants={sectionVariants}
+                className="w-full"
+                style={{
+                  marginBottom: 'var(--space-2xl)',
+                }}
+              >
+                <TimerPresets onSelect={handleStart} />
+              </motion.div>
+
+              {/* Divider */}
+              <motion.div
+                variants={sectionVariants}
+                className="w-full flex items-center justify-center"
+                style={{
+                  marginBottom: 'var(--space-xl)',
+                }}
+              >
+                <div
+                  className="flex items-center w-full"
+                  style={{
+                    gap: 'var(--space-md)',
+                  }}
+                >
+                  <div
+                    style={{
+                      flex: 1,
+                      height: '1px',
+                      backgroundColor: 'var(--color-border-thin)',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 'var(--font-xs)',
+                      color: 'var(--color-text-muted)',
+                      fontFamily: 'var(--font-family)',
+                      letterSpacing: 'var(--letter-spacing-wide)',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    или
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: '1px',
+                      backgroundColor: 'var(--color-border-thin)',
+                    }}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Custom Time Input Section */}
               <motion.div
                 variants={sectionVariants}
                 className="w-full"
               >
-                <WheelTimePicker onStart={handleStart} />
+                <CustomTimeInput onStart={handleStart} />
               </motion.div>
             </motion.div>
           ) : (

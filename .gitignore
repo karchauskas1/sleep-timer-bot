@@ -40,3 +40,5 @@ dist-ssr
 .vercel
 .claude_settings.json
 .auto-claude-status
+.claude_settings.json
+.auto-claude-status

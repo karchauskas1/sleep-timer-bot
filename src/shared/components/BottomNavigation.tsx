@@ -2,17 +2,16 @@
  * BottomNavigation - iOS-style bottom tab bar navigation component
  *
  * Provides fixed bottom tab navigation for the ЩА (SHA) Mini App.
- * Tabs: Планы (Planner), Сон (Sleep), Таймер (Timer), Настройки (Settings)
+ * Tabs: Планы (Planner), Сон (Sleep), Таймер (Timer)
  *
  * Features:
  * - Fixed position at screen bottom
  * - Safe-area padding for iOS devices (home indicator)
  * - Icons with labels for each tab
  * - Haptic feedback on tab change
- * - Active state with accent color and scale animation
- * - Premium glass effect with enhanced backdrop blur
- * - Clearly visible active indicator with subtle glow
+ * - Active state with accent color
  * - Persists last selected module to localStorage
+ * - Hidden on home screen
  *
  * @example
  * // Basic usage
@@ -28,7 +27,7 @@
  * );
  */
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { ModuleId } from '@/types';
 import { useHaptic } from '@/shared/hooks/useHaptic';
@@ -39,42 +38,12 @@ import { useHaptic } from '@/shared/hooks/useHaptic';
 
 /**
  * Indicator position variants for each tab
- * Each tab occupies 25% width, so positions are 0%, 100%, 200%, 300%
+ * Each tab occupies 33.33% width, so positions are 0%, 100%, 200%
  */
 const indicatorVariants = {
   planner: { x: '0%' },
   sleep: { x: '100%' },
   timer: { x: '200%' },
-  settings: { x: '300%' },
-};
-
-/**
- * Icon animation variants for active/inactive states
- * Active icons scale up slightly for better visibility
- */
-const iconVariants = {
-  inactive: {
-    scale: 1,
-    opacity: 0.7,
-  },
-  active: {
-    scale: 1.1,
-    opacity: 1,
-  },
-};
-
-/**
- * Label animation variants for active/inactive states
- */
-const labelVariants = {
-  inactive: {
-    opacity: 0.7,
-    y: 0,
-  },
-  active: {
-    opacity: 1,
-    y: 0,
-  },
 };
 
 // =============================================================================
@@ -155,28 +124,6 @@ function TimerIcon({ active }: { active: boolean }) {
   );
 }
 
-/**
- * Settings/Gear icon for Settings tab
- */
-function SettingsIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={active ? 2 : 1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" />
-    </svg>
-  );
-}
-
 // =============================================================================
 // Types
 // =============================================================================
@@ -207,12 +154,12 @@ interface BottomNavigationProps {
 /**
  * Tab configuration - order matters for display
  * Labels updated for clarity: "Планы" instead of "Сегодня"
+ * Note: Settings is now accessed from the Home screen, not global nav
  */
 const TABS: Tab[] = [
   { id: 'planner', label: 'Планы', Icon: ChecklistIcon },
   { id: 'sleep', label: 'Сон', Icon: MoonIcon },
   { id: 'timer', label: 'Таймер', Icon: TimerIcon },
-  { id: 'settings', label: 'Настройки', Icon: SettingsIcon },
 ];
 
 // =============================================================================
@@ -247,10 +194,11 @@ function saveLastModule(module: ModuleId): void {
 }
 
 /**
- * Type guard to check if a string is a valid ModuleId
+ * Type guard to check if a string is a valid tab ModuleId
+ * Note: Only includes modules shown in bottom navigation (excludes home, settings)
  */
 function isValidModule(value: string): value is ModuleId {
-  return value === 'planner' || value === 'sleep' || value === 'timer' || value === 'settings';
+  return value === 'planner' || value === 'sleep' || value === 'timer';
 }
 
 // =============================================================================
@@ -263,6 +211,7 @@ function isValidModule(value: string): value is ModuleId {
  * Renders iOS-style bottom tab bar for switching between app modules.
  * Automatically persists the last selected module to localStorage.
  * Includes safe-area padding for iOS devices with home indicator.
+ * Hidden when on the home screen.
  *
  * @param props - Component props
  * @param props.currentModule - Currently active module
@@ -275,12 +224,11 @@ export function BottomNavigation({
   const haptic = useHaptic();
   const prefersReducedMotion = useReducedMotion();
 
-  // Persist module changes to localStorage
-  useEffect(() => {
-    saveLastModule(currentModule);
-  }, [currentModule]);
+  // Hide navigation on home screen and settings screen
+  const shouldHide = currentModule === 'home' || currentModule === 'settings';
 
   // Handle tab selection with haptic feedback
+  // Note: Must be declared before early return to follow React hooks rules
   const handleTabClick = useCallback(
     (module: ModuleId) => {
       if (module !== currentModule) {
@@ -291,29 +239,17 @@ export function BottomNavigation({
     [currentModule, haptic, onModuleChange]
   );
 
-  // Animation transition configuration
-  const springTransition = useMemo(
-    () =>
-      prefersReducedMotion
-        ? { duration: 0 }
-        : {
-            type: 'spring',
-            stiffness: 400,
-            damping: 30,
-          },
-    [prefersReducedMotion]
-  );
+  // Persist module changes to localStorage (only for tab modules)
+  useEffect(() => {
+    if (!shouldHide) {
+      saveLastModule(currentModule);
+    }
+  }, [currentModule, shouldHide]);
 
-  const colorTransition = useMemo(
-    () =>
-      prefersReducedMotion
-        ? { duration: 0 }
-        : {
-            duration: 0.2,
-            ease: [0.16, 1, 0.3, 1],
-          },
-    [prefersReducedMotion]
-  );
+  // Don't render on home or settings screen
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <nav
@@ -322,31 +258,36 @@ export function BottomNavigation({
         height: `calc(var(--height-bottom-nav) + env(safe-area-inset-bottom, 34px) + 20px)`,
         paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 20px)',
         backgroundColor: 'var(--glass-bg)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        backdropFilter: 'var(--glass-blur)',
+        WebkitBackdropFilter: 'var(--glass-blur)',
         borderTop: '1px solid var(--glass-border)',
         zIndex: 'var(--z-fixed)',
-        boxShadow: '0 -1px 12px rgba(0, 0, 0, 0.04)',
       }}
       role="tablist"
       aria-label="Module navigation"
     >
-      {/* Sliding indicator - enhanced visibility with glow effect */}
+      {/* Sliding indicator */}
       <motion.div
-        className="absolute"
+        className="absolute rounded-lg"
         style={{
-          width: 'calc(25% - 8px)',
-          height: 'calc(100% - env(safe-area-inset-bottom, 34px) - 20px - 12px)',
-          top: 6,
-          left: 4,
+          width: '33.33%',
+          height: 'calc(100% - env(safe-area-inset-bottom, 34px) - 20px - 8px)',
+          top: 4,
+          left: 0,
           backgroundColor: 'var(--nav-indicator-bg)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
         }}
         variants={indicatorVariants}
         animate={currentModule}
-        transition={springTransition}
+        transition={
+          prefersReducedMotion
+            ? { duration: 0 }
+            : {
+                type: 'spring',
+                stiffness: 400,
+                damping: 30,
+              }
+        }
       />
       {TABS.map((tab) => {
         const isActive = tab.id === currentModule;
@@ -359,52 +300,26 @@ export function BottomNavigation({
             role="tab"
             aria-selected={isActive}
             aria-controls={`panel-${tab.id}`}
-            className="relative z-10 flex flex-col items-center justify-center flex-1"
+            className="relative z-10 flex flex-col items-center justify-center gap-[var(--space-0-5)] flex-1"
             style={{
               fontFamily: 'var(--font-family)',
-              background: 'transparent',
+              fontSize: 'var(--font-2xs)',
+              fontWeight: isActive
+                ? 'var(--font-weight-semibold)'
+                : 'var(--font-weight-normal)',
+              color: isActive
+                ? 'var(--color-accent)'
+                : 'var(--color-text-muted)',
               border: 'none',
               cursor: 'pointer',
               minHeight: 'var(--min-touch-target)',
               paddingTop: 'var(--space-sm)',
               paddingBottom: 'var(--space-xs)',
-              gap: 'var(--space-xs)',
+              transition: 'var(--transition-colors)',
             }}
           >
-            {/* Animated icon wrapper */}
-            <motion.div
-              variants={iconVariants}
-              animate={isActive ? 'active' : 'inactive'}
-              transition={colorTransition}
-              style={{
-                color: isActive
-                  ? 'var(--color-accent)'
-                  : 'var(--color-text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon active={isActive} />
-            </motion.div>
-            {/* Animated label */}
-            <motion.span
-              variants={labelVariants}
-              animate={isActive ? 'active' : 'inactive'}
-              transition={colorTransition}
-              style={{
-                fontSize: 'var(--font-2xs)',
-                fontWeight: isActive
-                  ? 'var(--font-weight-semibold)'
-                  : 'var(--font-weight-normal)',
-                color: isActive
-                  ? 'var(--color-accent)'
-                  : 'var(--color-text-muted)',
-                letterSpacing: isActive ? '0.01em' : '0',
-              }}
-            >
-              {tab.label}
-            </motion.span>
+            <Icon active={isActive} />
+            <span>{tab.label}</span>
           </button>
         );
       })}

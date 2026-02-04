@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "013-",
+  "spec": "010-",
   "state": "building",
   "subtasks": {
-    "completed": 3,
-    "total": 7,
+    "completed": 8,
+    "total": 11,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Sleep Module Layout Polish",
+    "current": "Settings Relocation",
     "id": null,
     "total": 1
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
-    "started_at": "2026-02-04T03:09:43.078271"
+    "number": 7,
+    "started_at": "2026-02-04T03:09:53.281200"
   },
-  "last_update": "2026-02-04T03:13:18.132033"
+  "last_update": "2026-02-04T03:21:25.422047"
 }

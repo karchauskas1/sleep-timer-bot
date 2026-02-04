@@ -27,6 +27,7 @@ import { Planner } from '@/modules/planner';
 import { Sleep } from '@/modules/sleep';
 import { Timer } from '@/modules/timer';
 import { Settings } from '@/modules/settings';
+import { HomeScreen } from '@/modules/home';
 
 // =============================================================================
 // Constants
@@ -35,7 +36,7 @@ import { Settings } from '@/modules/settings';
 /**
  * Default module to show when no persisted preference exists
  */
-const DEFAULT_MODULE: ModuleId = 'planner';
+const DEFAULT_MODULE: ModuleId = 'home';
 
 /**
  * Animation configuration for module transitions
@@ -124,24 +125,33 @@ export function Router({ defaultModule = DEFAULT_MODULE, className = '' }: Route
   // -------------------------------------------------------------------------
 
   /**
+   * Handle navigating back to home screen
+   */
+  const handleBackToHome = useCallback(() => {
+    setCurrentModule('home');
+  }, []);
+
+  /**
    * Render the current module content
    * Memoized to prevent unnecessary re-renders
    */
   const moduleContent = useMemo(() => {
     switch (currentModule) {
+      case 'home':
+        return <HomeScreen key="home" onNavigate={handleModuleChange} />;
       case 'planner':
-        return <Planner key="planner" />;
+        return <Planner key="planner" onBack={handleBackToHome} />;
       case 'sleep':
-        return <Sleep key="sleep" />;
+        return <Sleep key="sleep" onBack={handleBackToHome} />;
       case 'timer':
-        return <Timer key="timer" />;
+        return <Timer key="timer" onBack={handleBackToHome} />;
       case 'settings':
         return <Settings key="settings" />;
       default:
         // TypeScript exhaustive check - should never reach here
         return null;
     }
-  }, [currentModule]);
+  }, [currentModule, handleModuleChange, handleBackToHome]);
 
   // -------------------------------------------------------------------------
   // Render

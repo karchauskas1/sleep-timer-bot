@@ -33,6 +33,8 @@ import {
   createTimeForToday,
 } from '@/modules/sleep/utils/sleepCalculator';
 import { useSettingsStore } from '@/modules/settings/store/settingsStore';
+import { SleepOnsetSetting } from '@/modules/settings/components/SleepOnsetSetting';
+import { BackButton } from '@/shared/components/BackButton';
 
 // =============================================================================
 // Constants
@@ -96,6 +98,8 @@ const timeInputVariants = {
 interface SleepProps {
   /** Additional CSS class name */
   className?: string;
+  /** Callback to navigate back to home screen */
+  onBack?: () => void;
 }
 
 // =============================================================================
@@ -110,7 +114,7 @@ interface SleepProps {
  *
  * @param props - Component props
  */
-export function Sleep({ className = '' }: SleepProps) {
+export function Sleep({ className = '', onBack }: SleepProps) {
   // -------------------------------------------------------------------------
   // Settings
   // -------------------------------------------------------------------------
@@ -120,6 +124,11 @@ export function Sleep({ className = '' }: SleepProps) {
    * Used in all sleep calculations
    */
   const sleepOnsetMinutes = useSettingsStore((state) => state.sleepOnsetMinutes);
+
+  /**
+   * Function to update sleep onset time in the store
+   */
+  const setSleepOnsetMinutes = useSettingsStore((state) => state.setSleepOnsetMinutes);
 
   // -------------------------------------------------------------------------
   // State
@@ -211,6 +220,17 @@ export function Sleep({ className = '' }: SleepProps) {
     setSelectedTime(time);
   }, []);
 
+  /**
+   * Handle sleep onset time change
+   * Updates the store which automatically persists to IndexedDB
+   */
+  const handleSleepOnsetChange = useCallback(
+    (minutes: number) => {
+      setSleepOnsetMinutes(minutes);
+    },
+    [setSleepOnsetMinutes]
+  );
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -222,20 +242,34 @@ export function Sleep({ className = '' }: SleepProps) {
         backgroundColor: 'var(--color-bg)',
       }}
     >
+      {/* Header with Back Button */}
+      {onBack && (
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: 'var(--space-sm) var(--space-md)',
+            paddingTop: 'calc(var(--space-sm) + var(--safe-area-top))',
+          }}
+        >
+          <BackButton onBack={onBack} />
+        </header>
+      )}
+
       {/* Content container with vertical centering */}
       <div
         className="flex-1 flex flex-col items-center justify-center"
         style={{
           padding: 'var(--space-lg)',
-          paddingTop: 'var(--space-2xl)',
-          paddingBottom: 'var(--space-3xl)',
+          paddingTop: 'var(--space-xl)',
+          paddingBottom: 'var(--space-2xl)',
         }}
       >
         {/* Mode Toggle */}
         <div
-          className="w-full max-w-xs"
+          className="w-full max-w-xs mb-8"
           style={{
-            marginBottom: 'var(--space-3xl)',
+            marginBottom: 'var(--space-2xl)',
           }}
         >
           <ModeToggle
@@ -255,7 +289,7 @@ export function Sleep({ className = '' }: SleepProps) {
               exit="exit"
               className="w-full flex justify-center"
               style={{
-                marginBottom: 'var(--space-3xl)',
+                marginBottom: 'var(--space-2xl)',
               }}
             >
               <TimeInput
@@ -278,29 +312,24 @@ export function Sleep({ className = '' }: SleepProps) {
               transition={ANIMATION_CONFIG}
               className="text-center"
               style={{
-                marginBottom: 'var(--space-3xl)',
+                marginBottom: 'var(--space-2xl)',
               }}
             >
               <p
                 style={{
                   fontSize: 'var(--font-sm)',
-                  color: 'var(--color-text-secondary)',
-                  marginBottom: 'var(--space-sm)',
-                  fontWeight: 'var(--font-weight-medium)',
-                  letterSpacing: 'var(--letter-spacing-wide)',
-                  textTransform: 'uppercase',
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 'var(--space-xs)',
                 }}
               >
                 Если лечь сейчас
               </p>
               <p
-                className="tabular-nums"
+                className="tabular-nums font-semibold"
                 style={{
-                  fontSize: 'var(--font-timer)',
-                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: 'var(--font-2xl)',
                   color: 'var(--color-text-primary)',
                   letterSpacing: 'var(--letter-spacing-tight)',
-                  lineHeight: 'var(--line-height-none)',
                 }}
               >
                 {currentTime.toLocaleTimeString('ru-RU', {
@@ -323,6 +352,48 @@ export function Sleep({ className = '' }: SleepProps) {
             mode={mode}
           />
         </motion.div>
+
+        {/* Sleep Onset Setting */}
+        <div
+          className="w-full max-w-sm"
+          style={{
+            marginTop: 'var(--space-2xl)',
+          }}
+        >
+          {/* Section Title */}
+          <h2
+            className="text-center"
+            style={{
+              fontSize: 'var(--font-base)',
+              fontWeight: 'var(--font-weight-medium)',
+              color: 'var(--color-text-secondary)',
+              marginBottom: 'var(--space-md)',
+              fontFamily: 'var(--font-family)',
+            }}
+          >
+            Время засыпания
+          </h2>
+
+          {/* Sleep Onset Input */}
+          <SleepOnsetSetting
+            value={sleepOnsetMinutes}
+            onChange={handleSleepOnsetChange}
+          />
+
+          {/* Helper Text */}
+          <p
+            className="text-center"
+            style={{
+              fontSize: 'var(--font-sm)',
+              color: 'var(--color-text-muted)',
+              marginTop: 'var(--space-md)',
+              fontFamily: 'var(--font-family)',
+              lineHeight: 'var(--line-height-relaxed)',
+            }}
+          >
+            Сколько времени вам нужно, чтобы заснуть
+          </p>
+        </div>
       </div>
     </div>
   );

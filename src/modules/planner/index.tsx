@@ -2,12 +2,10 @@
  * Planner Module - Main entry point for task management
  *
  * Integrates all planner components into a cohesive task management experience:
- * - HorizontalDaySelector for quick date navigation
  * - TaskInput at top for quick task entry
  * - TaskList displaying all tasks organized by date
  * - Navigation to RecurringList for managing recurring tasks
  * - DatePicker modal for postponing tasks
- * - MonthCalendar modal for selecting distant dates
  *
  * Design principles:
  * - Silence through minimalism - no productivity pressure
@@ -25,10 +23,9 @@ import { TaskInput } from '@/modules/planner/components/TaskInput';
 import { TaskList } from '@/modules/planner/components/TaskList';
 import { RecurringList } from '@/modules/planner/components/RecurringList';
 import { DatePicker } from '@/modules/planner/components/DatePicker';
-import { HorizontalDaySelector } from '@/modules/planner/components/HorizontalDaySelector';
-import { MonthCalendar } from '@/modules/planner/components/MonthCalendar';
 import { usePlannerStore } from '@/modules/planner/store/plannerStore';
 import { useHaptic } from '@/shared/hooks/useHaptic';
+import { BackButton } from '@/shared/components/BackButton';
 
 // =============================================================================
 // Constants
@@ -66,6 +63,8 @@ type PlannerView = 'main' | 'recurring';
 interface PlannerProps {
   /** Additional CSS class name */
   className?: string;
+  /** Callback to navigate back to home screen */
+  onBack?: () => void;
 }
 
 // =============================================================================
@@ -78,15 +77,12 @@ interface PlannerProps {
  * Main entry point for the task planner functionality.
  * Manages view state between main task list and recurring tasks.
  * Handles postpone action with date picker modal.
- * Integrates horizontal day selector and month calendar for date navigation.
  *
  * @param props - Component props
  */
-export function Planner({ className = '' }: PlannerProps) {
+export function Planner({ className = '', onBack }: PlannerProps) {
   const haptic = useHaptic();
   const postponeTask = usePlannerStore((state) => state.postponeTask);
-  const selectedDate = usePlannerStore((state) => state.selectedDate);
-  const setSelectedDate = usePlannerStore((state) => state.setSelectedDate);
 
   // View state
   const [currentView, setCurrentView] = useState<PlannerView>('main');
@@ -94,9 +90,6 @@ export function Planner({ className = '' }: PlannerProps) {
   // Date picker state for postpone action
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-
-  // Month calendar state
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -149,31 +142,6 @@ export function Planner({ className = '' }: PlannerProps) {
     setSelectedTaskId(null);
   }, []);
 
-  /**
-   * Handle month label click - opens month calendar
-   */
-  const handleMonthLabelClick = useCallback(() => {
-    setIsCalendarOpen(true);
-  }, []);
-
-  /**
-   * Handle month calendar close
-   */
-  const handleCalendarClose = useCallback(() => {
-    setIsCalendarOpen(false);
-  }, []);
-
-  /**
-   * Handle date selection from month calendar
-   */
-  const handleCalendarSelect = useCallback(
-    (date: string) => {
-      setSelectedDate(date);
-      setIsCalendarOpen(false);
-    },
-    [setSelectedDate]
-  );
-
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -188,6 +156,20 @@ export function Planner({ className = '' }: PlannerProps) {
         backgroundColor: 'var(--color-bg)',
       }}
     >
+      {/* Header with Back Button */}
+      {onBack && (
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: 'var(--space-sm) var(--space-md)',
+            paddingTop: 'calc(var(--space-sm) + var(--safe-area-top))',
+          }}
+        >
+          <BackButton onBack={onBack} />
+        </header>
+      )}
+
       <AnimatePresence mode="wait">
         {currentView === 'main' ? (
           <motion.div
@@ -203,13 +185,6 @@ export function Planner({ className = '' }: PlannerProps) {
               flex: 1,
             }}
           >
-            {/* Horizontal Day Selector */}
-            <HorizontalDaySelector
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              onMonthLabelClick={handleMonthLabelClick}
-            />
-
             {/* Task Input */}
             <TaskInput showDatePicker />
 
@@ -220,7 +195,7 @@ export function Planner({ className = '' }: PlannerProps) {
                 overflowY: 'auto',
               }}
             >
-              <TaskList onPostpone={handlePostpone} singleDayMode />
+              <TaskList onPostpone={handlePostpone} />
             </div>
 
             {/* Footer with Recurring Tasks Link */}
@@ -318,14 +293,6 @@ export function Planner({ className = '' }: PlannerProps) {
         isOpen={isDatePickerOpen}
         onClose={handleDatePickerClose}
         onSelect={handleDateSelect}
-      />
-
-      {/* Month Calendar Modal for Date Navigation */}
-      <MonthCalendar
-        isOpen={isCalendarOpen}
-        onClose={handleCalendarClose}
-        onSelect={handleCalendarSelect}
-        selectedDate={selectedDate}
       />
     </div>
   );
